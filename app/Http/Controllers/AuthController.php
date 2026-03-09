@@ -3,18 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // Form Login
+    // Menampilkan halaman login sesuai Flowmap [cite: 61]
     public function showLogin() {
         return view('auth.login');
     }
 
-    // Proses Login (Validasi Login di Flowmap) [cite: 70, 82]
+    // Proses Validasi Login [cite: 70, 82]
     public function login(Request $request) {
         $credentials = $request->validate([
             'username' => 'required',
@@ -24,36 +24,42 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             
-            // Redirect sesuai Role [cite: 66, 68]
-            if (Auth::user()->role === 'admin') {
-                return redirect()->intended('/admin/dashboard');
-            }
-            return redirect()->intended('/siswa/dashboard');
+            // Redirect berdasarkan Role [cite: 133, 134]
+            return Auth::user()->role === 'admin' 
+                ? redirect()->intended('/admin/dashboard') 
+                : redirect()->intended('/siswa/dashboard');
         }
 
-        return back()->withErrors(['username' => 'Login gagal, cek lagi bro!']);
+        return back()->withErrors(['username' => 'Username atau Password salah!']);
     }
 
-    // Daftar Anggota buat Siswa [cite: 79]
+    // Menampilkan halaman daftar anggota [cite: 79]
+    public function showRegister() {
+        return view('auth.register');
+    }
+
+    // Proses Daftar Anggota Siswa 
     public function register(Request $request) {
-        $data = $request->validate([
-            'name' => 'required',
-            'username' => 'required|unique:users',
-            'password' => 'required|min:6',
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|unique:users',
+            'password' => 'required|min:6|confirmed',
         ]);
 
         User::create([
-            'name' => $data['name'],
-            'username' => $data['username'],
-            'password' => Hash::make($data['password']),
+            'name' => $request->name,
+            'username' => $request->username,
+            'password' => Hash::make($request->password),
             'role' => 'siswa', // Default pendaftar adalah siswa
         ]);
 
-        return redirect('/login')->with('success', 'Berhasil daftar, silakan login!');
+        return redirect('/login')->with('success', 'Pendaftaran berhasil, silakan login!');
     }
 
-    public function logout() {
+    public function logout(Request $request) {
         Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
         return redirect('/login');
     }
 }
