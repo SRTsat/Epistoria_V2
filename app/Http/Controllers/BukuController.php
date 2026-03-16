@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Buku;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 
 class BukuController extends Controller
 {
@@ -71,10 +73,33 @@ class BukuController extends Controller
     }
 
     // Update buku [cite: 88]
-    public function update(Request $request, $id) {
-        $buku = Buku::findOrFail($id);
-        $buku->update($request->all());
-        return back()->with('success', 'Data buku diperbarui!');
+    public function update(Request $request, $id)
+        {
+            $buku = Buku::findOrFail($id);
+
+            $request->validate([
+                'judul' => 'required',
+                'penulis' => 'required',
+                'penerbit' => 'required',
+                'genre' => 'required',
+                'stok' => 'required|integer',
+                'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            ]);
+
+            $data = $request->all();
+
+            if ($request->hasFile('foto')) {
+                if ($buku->foto) {
+                    Storage::delete('public/buku/' . $buku->foto);
+                }
+                $file = $request->file('foto');
+                $nama_file = time() . "_" . $file->getClientOriginalName();
+                $file->storeAs('public/buku', $nama_file);
+                $data['foto'] = $nama_file;
+            }
+
+            $buku->update($data);
+            return redirect()->route('buku.index')->with('success', 'Buku berhasil diupdate!');
     }
 
     // Hapus buku (Delete) [cite: 88]
