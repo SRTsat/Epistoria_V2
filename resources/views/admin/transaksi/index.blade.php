@@ -15,6 +15,7 @@
             </div>
         </div>
     </div>
+    
     <div class="col-md-4">
         <div class="card border-0 shadow-sm bg-danger text-white">
             <div class="card-body">
@@ -23,6 +24,13 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <h3 class="fw-bold">Riwayat Transaksi Peminjaman</h3>
+    <a href="{{ route('transaksi.exportPdf') }}" class="btn btn-danger shadow-sm">
+        <i class="bi bi-file-earmark-pdf"></i> Export Laporan PDF
+    </a>
 </div>
 
 <div class="card shadow-sm border-0">

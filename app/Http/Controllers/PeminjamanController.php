@@ -6,6 +6,7 @@ use App\Models\Buku;
 use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon; // WAJIB: Buat itung-itungan tanggal
 
 class PeminjamanController extends Controller
@@ -73,5 +74,15 @@ class PeminjamanController extends Controller
         }
 
         return back()->with('success', $pesan);
+    }
+
+    public function exportPdf() {
+        $transaksi = Peminjaman::with(['user', 'buku'])->latest()->get();
+        $totalDenda = Peminjaman::sum('denda');
+        
+        $pdf = Pdf::loadView('admin.transaksi.pdf', compact('transaksi', 'totalDenda'))
+                ->setPaper('a4', 'landscape'); // Landscape biar muat banyak kolom
+                
+        return $pdf->download('Laporan-Transaksi-Perpus-'.now()->format('d-m-Y').'.pdf');
     }
 }
