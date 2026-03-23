@@ -17,12 +17,19 @@ class AdminController extends Controller
         
         // Ngitung semua denda yang sudah terkumpul di database
         $total_denda = Peminjaman::sum('denda'); 
+        $recent_activities = Peminjaman::with(['user', 'buku'])->latest('updated_at')->take(5)->get();
+        $populers = Buku::withCount('peminjamans')
+        ->orderBy('peminjamans_count', 'desc')
+        ->take(3)
+        ->get();
 
         return view('admin.dashboard', compact(
             'total_buku', 
             'total_siswa', 
             'total_pinjam', 
-            'total_denda'
+            'total_denda',
+            'recent_activities',
+            'populers'
         ));
     }
 

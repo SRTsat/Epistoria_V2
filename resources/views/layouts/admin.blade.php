@@ -12,33 +12,75 @@
     @stack('styles')
 
     <style>
-        body { background-color: #f8f9fa; }
+        /* Google Fonts buat kesan modern */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body { 
+            background-color: #f0f2f5; 
+            font-family: 'Inter', sans-serif;
+            color: #334155;
+        }
+
+        /* Sidebar dengan Gradasi & Blur */
         .sidebar { 
             height: 100vh; 
-            width: 250px; 
+            width: 260px; 
             position: fixed; 
-            background: #212529; 
+            background: #1e293b; 
             color: white; 
-            padding-top: 20px; 
+            padding-top: 25px; 
             z-index: 1000;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
-        .main-content { margin-left: 250px; padding: 30px; }
+
+        .main-content { 
+            margin-left: 260px; 
+            padding: 40px; 
+            transition: all 0.3s ease;
+        }
+
+        /* Nav Link yang Lebih Interaktif */
         .nav-link { 
-            color: #adb5bd; 
-            padding: 12px 20px;
-            border-radius: 5px;
-            margin-bottom: 5px;
+            color: #94a3b8; 
+            padding: 12px 18px;
+            border-radius: 8px;
+            margin: 4px 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
         }
-        .nav-link:hover, .nav-link.active { 
-            color: white; 
-            background: #343a40; 
+
+        .nav-link i { font-size: 1.1rem; }
+
+        .nav-link:hover { 
+            color: #f8fafc; 
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(5px);
         }
+
         .nav-link.active {
-            background: #0d6efd;
+            background: linear-gradient(45deg, #2563eb, #3b82f6);
             color: white !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
-        hr { border-color: rgba(255,255,255,0.1); }
+
+        /* Card Styling untuk konten */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .alert {
+            border-radius: 12px;
+        }
+
+        /* Custom Scrollbar biar estetik */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body>
