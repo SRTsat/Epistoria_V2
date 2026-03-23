@@ -1,149 +1,114 @@
 @extends('layouts.siswa')
 
 @section('content')
-<div class="row mb-4 align-items-end">
-    <div class="col-md-4">
-        <h2 class="fw-bold text-dark">Katalog Buku</h2>
-        <p class="text-muted small mb-0">Temukan buku favoritmu di sini.</p>
+<div class="container py-4">
+   <div class="card border-0 rounded-4 mb-4 overflow-hidden shadow-sm" 
+        style="background: linear-gradient(135deg, #0d6efd 0%, #00d2ff 100%); position: relative;">
+        
+        <div class="card-body p-4 p-md-5 text-white position-relative" style="z-index: 2;">
+            <h2 class="fw-bold">Selamat Datang, {{ Auth::user()->name }}!</h2>
+            <a href="{{ route('siswa.katalog') }}" class="btn btn-light rounded-pill px-4 fw-bold text-primary shadow-sm">
+                <i class="bi bi-search me-1"></i> Mulai Cari Buku
+            </a>
+        </div>
+
+        <i class="bi bi-book position-absolute end-0 bottom-0 opacity-25 mb-n4 me-n2 text-white" 
+        style="font-size: 12rem; line-height: 1; pointer-events: none;"></i>
     </div>
-    <div class="col-md-8">
-        <div class="row g-2">
-            <div class="col-md-5">
-                <label class="small fw-bold text-muted mb-1">Filter Genre:</label>
 
-                <!-- FIX: hapus display:none -->
-                <select id="filter-genre"
-                        class="form-select select2"
-                        name="genres[]"
-                        multiple="multiple"
-                        data-placeholder="Pilih Genre..."
-                        style="width: 100%;">
-                        
-                    <option value="Fiksi">Fiksi</option>
-                    <option value="Non-Fiksi">Non-Fiksi</option>
-                    <option value="Novel">Novel</option>
-                    <option value="Edukasi">Edukasi</option>
-                    <option value="Teknologi">Teknologi</option>
-                </select>
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-4 me-3">
+                        <i class="bi bi-journal-check fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted fw-bold">Sedang Dipinjam</div>
+                        <h4 class="fw-bold mb-0 text-dark">{{ $totalDipinjam }} <small class="fs-6 fw-normal">Buku</small></h4>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div class="col-md-7">
-                <label class="small fw-bold text-muted mb-1">Cari Buku:</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search text-muted"></i>
-                    </span>
-                    <input type="text"
-                           id="live-search"
-                           class="form-control border-start-0 shadow-none"
-                           placeholder="Ketik judul atau penulis...">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-success bg-opacity-10 text-success p-3 rounded-4 me-3">
+                        <i class="bi bi-clock-history fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted fw-bold">Total Pinjaman</div>
+                        <h4 class="fw-bold mb-0 text-dark">{{ $totalRiwayat }} <small class="fs-6 fw-normal">Kali</small></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-danger border-4">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-4 me-3">
+                        <i class="bi bi-wallet2 fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted fw-bold">Tunggakan Denda</div>
+                        <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format($totalDenda, 0, ',', '.') }}</h4>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Koleksi Terbaru</h4>
+            <p class="text-muted small mb-0">Jangan lewatkan buku-buku yang baru saja tiba di perpustakaan.</p>
+        </div>
+        <a href="{{ route('siswa.katalog') }}" class="btn btn-outline-primary rounded-pill btn-sm px-3">
+            Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+
+    <div class="row g-4">
+        @foreach($bukuTerbaru as $b)
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-elevate">
+                <div class="p-2">
+                    @if($b->foto)
+                        <img src="{{ asset('storage/buku/'.$b->foto) }}" class="card-img-top rounded-4 shadow-sm" alt="{{ $b->judul }}" style="height: 220px; object-fit: cover;">
+                    @else
+                        <div class="bg-light rounded-4 d-flex align-items-center justify-content-center" style="height: 220px;">
+                            <i class="bi bi-image text-muted fs-1"></i>
+                        </div>
+                    @endif
+                </div>
+                <div class="card-body pt-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 10px;">{{ $b->genre }}</span>
+                    <h6 class="fw-bold mb-1 text-truncate text-dark">{{ $b->judul }}</h6>
+                    <p class="text-muted mb-3" style="font-size: 12px;">{{ $b->penulis }}</p>
+                    <a href="{{ route('siswa.pinjam', $b->id) }}" class="btn btn-primary w-100 rounded-pill btn-sm shadow-sm">
+                        <i class="bi bi-bookmark-plus me-1"></i> Pinjam
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
 </div>
-
-<hr class="mb-4 opacity-10">
-
-<div class="row" id="container-buku">
-    @include('siswa._buku_list')
-</div>
-@endsection
-
-@push('styles')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 <style>
-.select2-container {
-    width: 100% !important;
-}
-
-/* Box */
-.select2-container--default .select2-selection--multiple {
-    border: 1px solid #dee2e6 !important;
-    border-radius: 0.375rem !important;
-    min-height: 38px !important;
-    padding: 1px 5px !important;
-    background-color: #fff !important;
-}
-
-/* Focus */
-.select2-container--default.select2-container--focus .select2-selection--multiple {
-    border-color: #86b7fe !important;
-    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25) !important;
-}
-
-/* Badge */
-.select2-container--default .select2-selection__choice {
-    background-color: #0d6efd !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 4px !important;
-    padding: 1px 10px !important;
-    margin-top: 6px !important;
-    font-size: 0.85rem !important;
-}
-
-/* Remove button */
-.select2-container--default .select2-selection__choice__remove {
-    color: #fff !important;
-    margin-right: 5px !important;
-}
-
-.select2-container--default .select2-selection__choice__remove:hover {
-    color: #ffcccc !important;
-}
-
-/* Input search */
-.select2-search__field {
-    margin-top: 7px !important;
-}
-</style>
-@endpush
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<script>
-$(document).ready(function() {
-
-    // FIX: hapus .show()
-    $('#filter-genre').select2({
-        placeholder: "Pilih Genre...",
-        allowClear: true
-    });
-
-    const searchInput = document.getElementById('live-search');
-    const container = document.getElementById('container-buku');
-
-    function doFilter() {
-        let keyword = searchInput.value;
-        let genres = $('#filter-genre').val(); 
-
-        let params = new URLSearchParams();
-
-        if (keyword) params.append('search', keyword);
-
-        if (genres && genres.length > 0) {
-            genres.forEach(g => params.append('genres[]', g));
-        }
-
-        fetch(`{{ route('siswa.dashboard') }}?${params.toString()}`, {
-            headers: { "X-Requested-With": "XMLHttpRequest" }
-        })
-        .then(res => res.text())
-        .then(html => {
-            container.innerHTML = html;
-        })
-        .catch(err => console.error("Filter Error:", err));
+    /* Animasi hover untuk card buku */
+    .hover-elevate {
+        transition: all 0.3s ease-in-out;
     }
-
-    searchInput.addEventListener('input', doFilter);
-
-    $('#filter-genre').on('change', function() {
-        doFilter();
-    });
-});
-</script>
-@endpush
+    .hover-elevate:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    /* Mengatur jarak container agar tidak nempel ke navbar */
+    body {
+        background-color: #f8f9fa;
+    }
+</style>
+@endsection

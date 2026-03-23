@@ -10,35 +10,66 @@ use Carbon\Carbon;
 
 class SiswaController extends Controller
 {
-    public function dashboard(Request $request) {
-        $search = $request->search;
-        $genres = $request->genres; // Sekarang ini isinya Array [ "Fiksi", "Novel" ]
+    /**
+     * HALAMAN DASHBOARD (Ringkasan Akun)
+     * Isinya Statistik & 4 Buku Terbaru
+     */
+    public function index() 
+    {
+        $userId = Auth::id();
 
-        $query = \App\Models\Buku::query();
+        // 1. Hitung buku yang SEDANG dipinjam (belum dikembalikan)
+        $totalDipinjam = Peminjaman::where('user_id', $userId)
+                                   ->where('status', 'dipinjam')
+                                   ->count();
+
+        // 2. Hitung total semua riwayat (termasuk yang sudah dikembalikan)
+        $totalRiwayat = Peminjaman::where('user_id', $userId)->count();
+
+        // 3. Hitung total denda yang pernah/sedang didapat
+        $totalDenda = Peminjaman::where('user_id', $userId)->sum('denda');
+
+        // 4. Ambil 4 buku terbaru untuk pajangan di dashboard
+        $bukuTerbaru = Buku::latest()->take(4)->get();
+
+        return view('siswa.dashboard', compact('totalDipinjam', 'totalRiwayat', 'totalDenda', 'bukuTerbaru'));
+    }
+
+    /**
+     * HALAMAN KATALOG (Pindahan dari dashboard lama)
+     * Isinya Filter, Search, dan Daftar Semua Buku
+     */
+    public function katalog(Request $request) 
+    {
+        $search = $request->search;
+        $genres = $request->genres; 
+
+        $query = Buku::query();
 
         // Filter Multi-Genre
         if ($request->filled('genres')) {
-            $query->whereIn('genre', $genres); // Pakai whereIn untuk array
+            $query->whereIn('genre', $genres);
         }
 
         // Live Search
         if ($request->filled('search')) {
             $query->where(function($q) use ($search) {
                 $q->where('judul', 'like', "%{$search}%")
-                ->orWhere('penulis', 'like', "%{$search}%");
+                  ->orWhere('penulis', 'like', "%{$search}%");
             });
         }
 
         $bukus = $query->get();
 
+        // Jika request via AJAX (Live Search)
         if ($request->ajax()) {
             return view('siswa._buku_list', compact('bukus'))->render();
         }
 
-        return view('siswa.dashboard', compact('bukus'));
+        return view('siswa.katalog', compact('bukus'));
     }
 
-    // INI YANG TADI ILANG BRO: Menampilkan buku yang sedang dipinjam
+    // Menampilkan riwayat pinjaman siswa (Halaman Riwayat)
     public function indexPinjam() {
         $pinjaman = Peminjaman::where('user_id', Auth::id())
                     ->with('buku')
@@ -48,7 +79,7 @@ class SiswaController extends Controller
         return view('siswa.pinjam', compact('pinjaman'));
     }
 
-    // Melakukan Peminjaman (Update: Tambah Deadline)
+    // Proses Peminjaman
     public function pinjamBuku(Request $request) {
         $buku = Buku::findOrFail($request->buku_id);
 
@@ -60,8 +91,9 @@ class SiswaController extends Controller
             'user_id' => Auth::id(),
             'buku_id' => $request->buku_id,
             'tanggal_pinjam' => now(),
-            'deadline' => now()->addDays(7), // OTOMATIS: Deadline 7 hari dari sekarang
-            'status' => 'dipinjam'
+            'deadline' => now()->addDays(7), 
+            'status' => 'dipinjam',
+            'denda' => 0
         ]);
 
         $buku->decrement('stok');
@@ -69,7 +101,7 @@ class SiswaController extends Controller
         return redirect()->route('siswa.pinjam')->with('success', 'Buku berhasil dipinjam! Batas waktu 7 hari.');
     }
 
-    // Melakukan Pengembalian (Update: Hitung Denda Otomatis)
+    // Proses Pengembalian + Hitung Denda
     public function kembaliBuku($id) {
         $pinjam = Peminjaman::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
         
@@ -81,16 +113,15 @@ class SiswaController extends Controller
         $deadline = Carbon::parse($pinjam->deadline);
         $denda = 0;
 
-        // LOGIKA DENDA: Cek kalau hari ini ngelewatin deadline
         if ($tgl_kembali->gt($deadline)) {
             $selisih_hari = $tgl_kembali->diffInDays($deadline);
-            $denda = $selisih_hari * 1000; // Misal 1000 per hari telat
+            $denda = $selisih_hari * 1000; 
         }
 
         $pinjam->update([
             'tanggal_kembali' => $tgl_kembali,
             'status' => 'dikembalikan',
-            'denda' => $denda // Simpan nominal denda
+            'denda' => $denda 
         ]);
 
         $pinjam->buku->increment('stok');

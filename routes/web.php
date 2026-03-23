@@ -47,15 +47,16 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 });
 
 Route::middleware(['auth'])->prefix('siswa')->group(function () {
+    // Dashboard (Isinya Statistik/Ringkasan - Pake function index)
+    Route::get('/dashboard', [SiswaController::class, 'index'])->name('siswa.dashboard');
+    
+    // Katalog (Isinya Daftar Buku Lengkap - Pake function katalog)
+    Route::get('/katalog', [SiswaController::class, 'katalog'])->name('siswa.katalog');
 
-    Route::get('/dashboard', [SiswaController::class, 'dashboard'])->name('siswa.dashboard');
-
+    // Riwayat Pinjaman
     Route::get('/pinjam', [SiswaController::class, 'indexPinjam'])->name('siswa.pinjam');
 
-    // Pastiin controller dan fungsinya sinkron
+    // Proses Pinjam & Kembali
     Route::post('/pinjam', [SiswaController::class, 'pinjamBuku'])->name('pinjam.store');
-
-    // INI YANG TADI ERROR: Lu harus kasih ->name('pinjam.kembali')
-    // Dan pastiin fungsinya adalah 'kembaliBuku' sesuai yang ada di SiswaController lu
     Route::post('/kembali/{id}', [SiswaController::class, 'kembaliBuku'])->name('pinjam.kembali');
 });
