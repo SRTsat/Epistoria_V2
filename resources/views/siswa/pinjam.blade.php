@@ -84,15 +84,22 @@
                         </td>
                         <td>
                             @php
-                                $isOverdue = \Carbon\Carbon::now()->gt(\Carbon\Carbon::parse($p->deadline)) && $p->status == 'dipinjam';
+                                $pinjam = \Carbon\Carbon::parse($p->tanggal_pinjam);
+                                $deadline = \Carbon\Carbon::parse($p->deadline);
+                                // Hitung selisih hari antara pinjam dan deadline
+                                $durasi = $pinjam->diffInDays($deadline);
+                                
+                                $isOverdue = \Carbon\Carbon::now()->gt($deadline) && $p->status == 'dipinjam';
                             @endphp
+
                             <div class="small fw-bold {{ $isOverdue ? 'text-danger' : 'text-dark' }}">
-                                {{ \Carbon\Carbon::parse($p->deadline)->format('d M Y') }}
+                                {{ $deadline->format('d M Y') }}
                             </div>
+
                             @if($isOverdue)
                                 <span class="badge bg-danger bg-opacity-10 text-danger mt-1" style="font-size: 10px;">Terlambat!</span>
                             @else
-                                <small class="text-muted">7 Hari Pinjam</small>
+                                <small class="text-muted">{{ $durasi }} Hari Pinjam</small>
                             @endif
                         </td>
                         <td>

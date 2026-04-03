@@ -10,10 +10,13 @@ class Peminjaman extends Model
     protected $table = 'peminjamans';
     protected $fillable = [
         'user_id', 
-        'buku_id', 
-        'tanggal_pinjam', 
+        'buku_id',
+        'kelas',
+        'tanggal_pinjam',
+        'deadline',
         'tanggal_kembali', 
-        'status'
+        'status',
+        'denda'
     ];
 
     // Ngambil data User yang pinjam

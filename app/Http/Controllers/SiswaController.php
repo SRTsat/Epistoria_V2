@@ -81,24 +81,33 @@ class SiswaController extends Controller
 
     // Proses Peminjaman
     public function pinjamBuku(Request $request) {
+        // 1. Validasi dulu (biar pasti angkanya bener)
+        $data = $request->validate([
+            'buku_id' => 'required|exists:bukus,id',
+            'durasi' => 'required|integer|min:1|max:20', 
+            'kelas' => 'required|string'
+        ]);
+
         $buku = Buku::findOrFail($request->buku_id);
 
         if ($buku->stok <= 0) {
             return back()->with('error', 'Stok buku habis!');
         }
 
+        // 2. Gunakan durasi yang sudah divalidasi
         Peminjaman::create([
             'user_id' => Auth::id(),
             'buku_id' => $request->buku_id,
+            'kelas' => $request->kelas,
             'tanggal_pinjam' => now(),
-            'deadline' => now()->addDays(7), 
+            'deadline' => now()->addDays((int) $request->durasi), // <--- DIPAKSA JADI INT DI SINI
             'status' => 'dipinjam',
             'denda' => 0
         ]);
 
         $buku->decrement('stok');
 
-        return redirect()->route('siswa.pinjam')->with('success', 'Buku berhasil dipinjam! Batas waktu 7 hari.');
+        return redirect()->route('siswa.pinjam')->with('success', 'Buku berhasil dipinjam!');
     }
 
     // Proses Pengembalian + Hitung Denda
