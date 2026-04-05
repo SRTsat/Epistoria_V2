@@ -47,7 +47,8 @@ class AdminController extends Controller
     
     // Kelola Anggota [cite: 90, 103]
     public function indexAnggota() {
-        $anggotas = User::where('role', 'siswa')->get();
+        // Ambil semua user supaya admin bisa liat daftar admin lain juga
+        $anggotas = User::latest()->get(); 
         return view('admin.anggota.index', compact('anggotas'));
     }
 
@@ -55,17 +56,18 @@ class AdminController extends Controller
         $request->validate([
             'name' => 'required',
             'username' => 'required|unique:users',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
+            'role' => 'required|in:admin,siswa' // Validasi role
         ]);
 
         User::create([
             'name' => $request->name,
             'username' => $request->username,
             'password' => bcrypt($request->password),
-            'role' => 'siswa'
+            'role' => $request->role // Simpan sesuai input
         ]);
 
-        return back()->with('success', 'Anggota berhasil ditambahkan!');
+        return back()->with('success', 'Akun berhasil ditambahkan!');
     }
 
     // Update data siswa
@@ -73,13 +75,14 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
         $user->name = $request->name;
         $user->username = $request->username;
+        $user->role = $request->role; // Admin juga bisa ubah role user lain
         
         if ($request->filled('password')) {
             $user->password = bcrypt($request->password);
         }
         
         $user->save();
-        return back()->with('success', 'Data anggota berhasil diupdate!');
+        return back()->with('success', 'Data berhasil diupdate!');
     }
 
     // Hapus siswa
