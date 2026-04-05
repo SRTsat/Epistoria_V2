@@ -16,20 +16,28 @@ class SiswaController extends Controller
      */
     public function index() 
     {
-        $userId = Auth::id();
+       $userId = Auth::id();
+        $pinjamans = Peminjaman::where('user_id', $userId)->get();
 
-        // 1. Hitung buku yang SEDANG dipinjam (belum dikembalikan)
-        $totalDipinjam = Peminjaman::where('user_id', $userId)
-                                   ->where('status', 'dipinjam')
-                                   ->count();
+        $totalDenda = 0;
+        $hari_ini = \Carbon\Carbon::now()->startOfDay();
 
-        // 2. Hitung total semua riwayat (termasuk yang sudah dikembalikan)
-        $totalRiwayat = Peminjaman::where('user_id', $userId)->count();
+        foreach ($pinjamans as $p) {
+            if ($p->status == 'dipinjam') {
+                // Hitung denda berjalan jika sudah lewat deadline
+                $deadline = \Carbon\Carbon::parse($p->deadline)->startOfDay();
+                if ($hari_ini->gt($deadline)) {
+                    $selisih = $hari_ini->diffInDays($deadline);
+                    $totalDenda += ($selisih * 1000);
+                }
+            } else {
+                // Tambahkan denda yang sudah fix (sudah dikembalikan)
+                $totalDenda += $p->denda;
+            }
+        }
 
-        // 3. Hitung total denda yang pernah/sedang didapat
-        $totalDenda = Peminjaman::where('user_id', $userId)->sum('denda');
-
-        // 4. Ambil 4 buku terbaru untuk pajangan di dashboard
+        $totalDipinjam = $pinjamans->where('status', 'dipinjam')->count();
+        $totalRiwayat = $pinjamans->count();
         $bukuTerbaru = Buku::latest()->take(4)->get();
 
         return view('siswa.dashboard', compact('totalDipinjam', 'totalRiwayat', 'totalDenda', 'bukuTerbaru'));
@@ -71,14 +79,33 @@ class SiswaController extends Controller
 
     // Menampilkan riwayat pinjaman siswa (Halaman Riwayat)
     public function indexPinjam() {
-        $pinjaman = Peminjaman::where('user_id', Auth::id())
+        $userId = Auth::id();
+        $pinjaman = Peminjaman::where('user_id', $userId)
                     ->with('buku')
                     ->latest()
                     ->get();
         
-        return view('siswa.pinjam', compact('pinjaman'));
-    }
+        // HITUNG TOTAL DENDA (LOGIKA YANG SAMA KAYAK DI DASHBOARD)
+        $totalDenda = 0;
+        $hari_ini = \Carbon\Carbon::now()->startOfDay();
 
+        foreach ($pinjaman as $p) {
+            if ($p->status == 'dipinjam') {
+                // Hitung denda berjalan jika sudah lewat deadline
+                $deadline = \Carbon\Carbon::parse($p->deadline)->startOfDay();
+                if ($hari_ini->gt($deadline)) {
+                    $selisih = $hari_ini->diffInDays($deadline);
+                    $totalDenda += ($selisih * 1000);
+                }
+            } else {
+                // Tambahkan denda yang sudah fix dari database
+                $totalDenda += $p->denda;
+            }
+        }
+        
+        // Kirim variabel totalDenda ke view
+        return view('siswa.pinjam', compact('pinjaman', 'totalDenda'));
+    }
     // Proses Peminjaman
     public function pinjamBuku(Request $request) {
         // 1. Validasi dulu (biar pasti angkanya bener)
@@ -118,17 +145,21 @@ class SiswaController extends Controller
             return back()->with('error', 'Buku ini sudah dikembalikan!');
         }
 
-        $tgl_kembali = now();
-        $deadline = Carbon::parse($pinjam->deadline);
+        $tgl_sekarang = \Carbon\Carbon::now()->startOfDay();
+        $deadline = \Carbon\Carbon::parse($pinjam->deadline)->startOfDay();
+        
         $denda = 0;
+        $selisih_hari = 0;
 
-        if ($tgl_kembali->gt($deadline)) {
-            $selisih_hari = $tgl_kembali->diffInDays($deadline);
+        // Cek jika SEKARANG sudah LEWAT dari DEADLINE
+        if ($tgl_sekarang->gt($deadline)) {
+            // Tambahkan parameter true agar hasilnya SELALU POSITIF
+            $selisih_hari = $tgl_sekarang->diffInDays($deadline, true); 
             $denda = $selisih_hari * 1000; 
         }
 
         $pinjam->update([
-            'tanggal_kembali' => $tgl_kembali,
+            'tanggal_kembali' => now(),
             'status' => 'dikembalikan',
             'denda' => $denda 
         ]);
@@ -136,7 +167,7 @@ class SiswaController extends Controller
         $pinjam->buku->increment('stok');
 
         if ($denda > 0) {
-            return back()->with('success', "Buku dikembalikan. Anda telat $selisih_hari hari, denda: Rp " . number_format($denda));
+            return back()->with('success', "Buku dikembalikan. Telat $selisih_hari hari, denda: Rp " . number_format($denda, 0, ',', '.'));
         }
 
         return back()->with('success', 'Buku berhasil dikembalikan tepat waktu!');

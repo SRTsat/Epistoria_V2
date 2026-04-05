@@ -2,11 +2,12 @@
 
 @section('content')
 <div class="container py-4">
-   <div class="card border-0 rounded-4 mb-4 overflow-hidden shadow-sm" 
-        style="background: linear-gradient(135deg, #0d6efd 0%, #00d2ff 100%); position: relative;">
-        
+    <div class="card border-0 rounded-4 mb-4 overflow-hidden shadow-sm" 
+         style="background: linear-gradient(135deg, #0d6efd 0%, #00d2ff 100%); position: relative;">
+         
         <div class="card-body p-4 p-md-5 text-white position-relative" style="z-index: 2;">
             <h2 class="fw-bold">Selamat Datang, {{ Auth::user()->name }}!</h2>
+            <p class="opacity-75">"Buku adalah jendela dunia." Temukan petualangan baru di setiap halaman.</p>
             <a href="{{ route('siswa.katalog') }}" class="btn btn-light rounded-pill px-4 fw-bold text-primary shadow-sm">
                 <i class="bi bi-search me-1"></i> Mulai Cari Buku
             </a>
@@ -63,7 +64,6 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="fw-bold mb-1">Koleksi Terbaru</h4>
-            <p class="text-muted small mb-0">Jangan lewatkan buku-buku yang baru saja tiba di perpustakaan.</p>
         </div>
         <a href="{{ route('siswa.katalog') }}" class="btn btn-outline-primary rounded-pill btn-sm px-3">
             Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
@@ -76,7 +76,7 @@
             <div class="card border-0 shadow-sm rounded-4 h-100 hover-elevate">
                 <div class="p-2">
                     @if($b->foto)
-                        <img src="{{ asset('storage/buku/'.$b->foto) }}" class="card-img-top rounded-4 shadow-sm" alt="{{ $b->judul }}" style="height: 220px; object-fit: cover;">
+                        <img src="{{ asset('storage/buku/'.$b->foto) }}" class="card-img-top rounded-4 shadow-sm" style="height: 220px; object-fit: cover;">
                     @else
                         <div class="bg-light rounded-4 d-flex align-items-center justify-content-center" style="height: 220px;">
                             <i class="bi bi-image text-muted fs-1"></i>
@@ -87,28 +87,11 @@
                     <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 10px;">{{ $b->genre }}</span>
                     <h6 class="fw-bold mb-1 text-truncate text-dark">{{ $b->judul }}</h6>
                     <p class="text-muted mb-3" style="font-size: 12px;">{{ $b->penulis }}</p>
-                    <a href="{{ route('siswa.pinjam', $b->id) }}" class="btn btn-primary w-100 rounded-pill btn-sm shadow-sm">
-                        <i class="bi bi-bookmark-plus me-1"></i> Pinjam
-                    </a>
+                    <a href="{{ route('siswa.katalog') }}" class="btn btn-primary w-100 rounded-pill btn-sm shadow-sm">Pinjam</a>
                 </div>
             </div>
         </div>
         @endforeach
     </div>
 </div>
-
-<style>
-    /* Animasi hover untuk card buku */
-    .hover-elevate {
-        transition: all 0.3s ease-in-out;
-    }
-    .hover-elevate:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
-    /* Mengatur jarak container agar tidak nempel ke navbar */
-    body {
-        background-color: #f8f9fa;
-    }
-</style>
 @endsection
