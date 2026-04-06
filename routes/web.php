@@ -42,8 +42,10 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 
     // Export PDF Buku
     Route::get('/admin/buku/export-pdf', [BukuController::class, 'exportPdf'])->name('buku.exportPdf');
+    Route::get('/admin/transaksi/export-excel', [App\Http\Controllers\PeminjamanController::class, 'exportExcel'])->name('transaksi.exportExcel');
 
     Route::get('/admin/transaksi/export-pdf', [PeminjamanController::class, 'exportPdf'])->name('transaksi.exportPdf');
+    Route::patch('/admin/transaksi/{id}/bayar', [App\Http\Controllers\PeminjamanController::class, 'bayarDenda'])->name('admin.transaksi.bayar');
 });
 
 Route::middleware(['auth'])->prefix('siswa')->group(function () {

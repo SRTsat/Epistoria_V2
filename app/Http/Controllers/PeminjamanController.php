@@ -7,6 +7,8 @@ use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\TransaksiExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon; // WAJIB: Buat itung-itungan tanggal
 
 class PeminjamanController extends Controller
@@ -84,5 +86,28 @@ class PeminjamanController extends Controller
                 ->setPaper('a4', 'landscape'); // Landscape biar muat banyak kolom
                 
         return $pdf->download('Laporan-Transaksi-Perpus-'.now()->format('d-m-Y').'.pdf');
+    }
+
+    public function bayarDenda($id) 
+    {
+        // Cari data peminjaman berdasarkan ID
+        $pinjam = Peminjaman::findOrFail($id);
+        
+        // Pastikan denda memang ada sebelum diupdate
+        if ($pinjam->denda <= 0) {
+            return back()->with('error', 'Transaksi ini tidak memiliki denda.');
+        }
+
+        // Set denda jadi 0 (Lunas)
+        $pinjam->update([
+            'denda' => 0
+        ]);
+
+        return back()->with('success', 'Denda untuk ' . $pinjam->user->name . ' berhasil dilunasi!');
+    }
+    
+    public function exportExcel() 
+    {
+        return Excel::download(new TransaksiExport, 'Laporan-Perpustakaan-'.now()->format('d-m-Y').'.xlsx');
     }
 }
