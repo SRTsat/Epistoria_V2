@@ -1,6 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg bg-white shadow-sm fixed-top py-3">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center fw-bold" href="{{ route('siswa.dashboard') }}">
+            <i class="bi bi-book-half me-2 fs-3 text-primary"></i>
+            <span>Epis<span class="text-dark">Storia</span></span>
+        </a>
+    </div>
+</nav>
+
 <div class="login-wrapper d-flex align-items-center justify-content-center">
     <div class="shape shape-1"></div>
     <div class="shape shape-2"></div>
@@ -71,11 +82,18 @@
         --secondary: #4cc9f0;
     }
 
+    /* Navbar blur effect (optional tapi keren) */
+    .navbar {
+        background: rgba(255,255,255,0.85) !important;
+        backdrop-filter: blur(10px);
+    }
+
     .login-wrapper {
         min-height: 100vh;
         background-color: #f4f7fe;
         overflow: hidden;
         position: relative;
+        padding-top: 90px; /* biar ga ketutup navbar */
     }
 
     /* Background Shapes */

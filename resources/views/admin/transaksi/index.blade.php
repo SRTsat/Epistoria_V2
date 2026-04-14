@@ -54,7 +54,7 @@
                             <th class="border-0 px-4 py-3">PEMINJAM</th>
                             <th class="border-0 py-3">BUKU</th>
                             <th class="border-0 py-3 text-center">DEADLINE</th>
-                            <th class="border-0 py-3">TGL KEMBALI</th>
+                            <th class="border-0 py-3">TANGGAL KEMBALI</th>
                             <th class="border-0 py-3">DENDA</th>
                             <th class="border-0 py-3 text-center">STATUS</th>
                             <th class="border-0 py-3 text-center px-4">AKSI</th>

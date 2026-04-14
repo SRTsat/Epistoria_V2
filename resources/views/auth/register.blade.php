@@ -1,6 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg bg-white shadow-sm fixed-top py-3">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center fw-bold" href="{{ route('siswa.dashboard') }}">
+            <i class="bi bi-book-half me-2 fs-3 text-primary"></i>
+            <span>Epis<span class="text-dark">Storia</span></span>
+        </a>
+    </div>
+</nav>
+
 <div class="login-wrapper d-flex align-items-center justify-content-center py-5">
     <div class="shape shape-1"></div>
     <div class="shape shape-2"></div>
@@ -47,6 +58,7 @@
                                     </div>
                                 </div>
                             </div>
+
                             <button type="submit" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-blue mb-4 transition-all">
                                 Daftar Sekarang <i class="bi bi-person-check ms-2"></i>
                             </button>
@@ -58,6 +70,10 @@
                         </form>
                     </div>
                 </div>
+
+                <div class="text-center mt-5">
+                    <p class="text-muted x-small">Perpustakaan Digital v2.0 &bull; 2026</p>
+                </div>
             </div>
         </div>
     </div>
@@ -66,9 +82,14 @@
 
 @push('styles')
 <style>
-    /* Pakai CSS yang sama dengan login tadi biar konsisten */
     :root {
         --primary: #4361ee;
+    }
+
+    /* Navbar */
+    .navbar {
+        background: rgba(255,255,255,0.85) !important;
+        backdrop-filter: blur(10px);
     }
 
     .login-wrapper {
@@ -76,6 +97,7 @@
         background-color: #f4f7fe;
         overflow: hidden;
         position: relative;
+        padding-top: 90px; /* biar ga ketutup navbar */
     }
 
     /* Background Shapes */
@@ -104,7 +126,6 @@
 
     .fw-black { font-weight: 900; letter-spacing: -0.5px; }
 
-    /* Input Styling */
     .form-control { padding: 1rem 1.2rem; transition: 0.3s; }
     .form-control:focus {
         background-color: #fff !important;
@@ -117,7 +138,6 @@
     .transition-all:hover { transform: translateY(-3px); }
     .x-small { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
 
-    /* Custom Checkbox */
     .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
 </style>
 @endpush
