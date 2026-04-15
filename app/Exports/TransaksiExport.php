@@ -9,10 +9,21 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class TransaksiExport implements FromCollection, WithHeadings, WithMapping
 {
+    protected $tahun;
+
+    // 1. Tambahin constructor biar bisa nerima lemparan tahun dari Controller
+    public function __construct($tahun)
+    {
+        $this->tahun = $tahun;
+    }
+
     public function collection()
     {
-        // Panggil relasi biar gak N+1 query
-        return Peminjaman::with(['user', 'buku'])->latest()->get();
+        // 2. Filter data berdasarkan tahun yang dipilih
+        return Peminjaman::with(['user', 'buku'])
+            ->whereYear('created_at', $this->tahun) // Filter tahun di sini
+            ->latest()
+            ->get();
     }
 
     public function headings(): array
@@ -25,13 +36,13 @@ class TransaksiExport implements FromCollection, WithHeadings, WithMapping
         static $no = 0;
         return [
             ++$no,
-            $t->user->name,
-            $t->buku->judul,
+            $t->user->name ?? 'User Terhapus', // Kasih fallback biar gak error kalo user ilang
+            $t->buku->judul ?? 'Buku Terhapus',
             $t->tanggal_pinjam,
             $t->deadline,
             $t->tanggal_kembali ?? '-',
             'Rp ' . number_format($t->denda, 0, ',', '.'),
-            ucwords($t->status)
+            ucwords(str_replace('_', ' ', $t->status)) // Biar 'proses_kembali' jadi 'Proses Kembali'
         ];
     }
 }

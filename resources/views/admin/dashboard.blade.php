@@ -124,7 +124,7 @@
         </div>
     </div>
 
-    <div class="col-lg-7">
+   <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between mb-4">
@@ -136,13 +136,46 @@
                     @forelse($recent_activities as $act)
                     <div class="d-flex mb-3">
                         <div class="me-3">
-                            <span class="badge rounded-pill bg-{{ $act->status == 'dipinjam' ? 'warning' : 'success' }} p-2">
-                                <i class="bi bi-{{ $act->status == 'dipinjam' ? 'arrow-up-right' : 'arrow-down-left' }}"></i>
+                            @php
+                                // Tentukan warna dan icon berdasarkan status
+                                $color = 'secondary';
+                                $icon = 'clock-history';
+                                $text_action = 'melakukan transaksi';
+
+                                if($act->status == 'menunggu') {
+                                    $color = 'info';
+                                    $icon = 'person-plus';
+                                    $text_action = 'mengajukan pinjaman';
+                                } elseif($act->status == 'dipinjam') {
+                                    $color = 'warning';
+                                    $icon = 'box-arrow-up';
+                                    $text_action = 'meminjam';
+                                } elseif($act->status == 'proses_kembali') {
+                                    $color = 'primary';
+                                    $icon = 'arrow-repeat';
+                                    $text_action = 'ingin mengembalikan';
+                                } elseif($act->status == 'dikembalikan') {
+                                    $color = 'success';
+                                    $icon = 'check2-circle';
+                                    $text_action = 'telah mengembalikan';
+                                }
+                            @endphp
+                            <span class="badge rounded-pill bg-{{ $color }} p-2">
+                                <i class="bi bi-{{ $icon }}"></i>
                             </span>
                         </div>
                         <div class="border-bottom pb-2 w-100">
-                            <p class="mb-0 small"><strong>{{ $act->user->name }}</strong> {{ $act->status == 'dipinjam' ? 'meminjam' : 'mengembalikan' }} <strong>{{ $act->buku->judul }}</strong></p>
-                            <small class="text-muted">{{ $act->updated_at->diffForHumans() }}</small>
+                            <p class="mb-0 small">
+                                <strong>{{ $act->user->name }}</strong> 
+                                {{ $text_action }} 
+                                <strong>{{ $act->buku->judul }}</strong>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ $act->updated_at->diffForHumans() }}</small>
+                                <span class="badge bg-light text-{{ $color }} border border-{{ $color }} rounded-pill p-1 px-2" style="font-size: 9px;">
+                                    {{ strtoupper($act->status) }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     @empty

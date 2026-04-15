@@ -99,57 +99,36 @@ class SiswaController extends Controller
             'kelas' => 'required|string'
         ]);
 
-        $buku = Buku::findOrFail($request->buku_id);
-
-        if ($buku->stok <= 0) {
-            return back()->with('error', 'Stok buku habis!');
-        }
-
+        // Kita bikin datanya masuk ke DB tapi statusnya 'menunggu'
+        // Stok tidak dikurangi di sini!
         Peminjaman::create([
             'user_id' => Auth::id(),
             'buku_id' => $request->buku_id,
             'kelas' => $request->kelas,
-            'tanggal_pinjam' => Carbon::now(),
-            'deadline' => Carbon::now()->addDays((int) $request->durasi),
-            'status' => 'dipinjam',
+            'tanggal_pinjam' => now(), 
+            'deadline' => now()->addDays((int) $request->durasi),
+            'status' => 'menunggu', // Kunci utamanya di sini
             'denda' => 0
         ]);
 
-        $buku->decrement('stok');
-        return redirect()->route('siswa.pinjam')->with('success', 'Buku berhasil dipinjam!');
+        return redirect()->route('siswa.pinjam')->with('success', 'Permintaan terkirim, tunggu di-accept admin ya!');
     }
 
     // Proses Kembalikan (Sisi Siswa)
-    public function kembaliBuku($id) 
+   public function kembaliBuku($id) 
     {
         $pinjam = Peminjaman::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
-    
-        if ($pinjam->status == 'dikembalikan') {
-            return back()->with('error', 'Buku ini sudah dikembalikan!');
+
+        // Pastikan dia cuma bisa klik kalau statusnya 'dipinjam'
+        if ($pinjam->status != 'dipinjam') {
+            return back()->with('error', 'Status buku tidak valid untuk dikembalikan.');
         }
 
-        $sekarang = Carbon::now()->startOfDay();
-        $deadline = Carbon::parse($pinjam->deadline)->startOfDay();
-        $denda = 0;
-        $selisih_hari = 0;
-
-        if ($sekarang->gt($deadline)) {
-            $selisih_hari = $sekarang->diffInDays($deadline);
-            $denda = $selisih_hari * 1000; 
-        }
-
+        // Siswa cuma ganti status ke 'proses_kembali'
         $pinjam->update([
-            'tanggal_kembali' => Carbon::now(),
-            'status' => 'dikembalikan',
-            'denda' => $denda 
+            'status' => 'proses_kembali'
         ]);
 
-        $pinjam->buku->increment('stok');
-
-        if ($denda > 0) {
-            return back()->with('success', "Buku dikembalikan. Telat $selisih_hari hari, denda: Rp " . number_format($denda, 0, ',', '.'));
-        }
-
-        return back()->with('success', 'Buku berhasil dikembalikan tepat waktu!');
+        return back()->with('success', 'Laporan pengembalian dikirim. Segera bawa buku ke perpus!');
     }
 }

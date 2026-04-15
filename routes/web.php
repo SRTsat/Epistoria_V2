@@ -30,7 +30,9 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 
     // CRUD Buku
     Route::resource('buku', BukuController::class);
-
+    Route::patch('/transaksi/{id}/kembalikan', [PeminjamanController::class, 'kembalikan'])->name('admin.transaksi.kembali');
+    Route::patch('/transaksi/{id}/approve', [PeminjamanController::class, 'approvePinjam'])->name('admin.transaksi.approve');
+    Route::patch('/transaksi/{id}/konfirmasi', [PeminjamanController::class, 'konfirmasiTerima'])->name('admin.transaksi.kembali');
     // Anggota
     Route::get('/anggota', [AdminController::class, 'indexAnggota'])->name('admin.anggota');
     Route::post('/anggota', [AdminController::class, 'storeAnggota'])->name('admin.anggota.store');
