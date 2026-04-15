@@ -92,7 +92,7 @@
                 <th width="9%" class="text-center">Status</th>
             </tr>
         </thead>
-        <tbody>
+       <tbody>
             @foreach($transaksi as $key => $t)
             <tr>
                 <td class="text-center">{{ $key + 1 }}</td>
@@ -104,8 +104,15 @@
                     {{ $t->tanggal_kembali ? \Carbon\Carbon::parse($t->tanggal_kembali)->format('d/m/Y') : '-' }}
                 </td>
                 <td class="text-right">
-                    @if($t->denda > 0)
-                        <span class="denda-danger">Rp {{ number_format($t->denda, 0, ',', '.') }}</span>
+                    @php
+                        // LOGIKA FIX: Gunakan denda_saat_ini jika denda di DB masih 0/dipinjam
+                        $tampilkanDenda = ($t->status == 'dipinjam' || $t->status == 'proses_kembali') 
+                                        ? ($t->denda_saat_ini ?? 0) 
+                                        : $t->denda;
+                    @endphp
+
+                    @if($tampilkanDenda > 0)
+                        <span class="denda-danger">Rp {{ number_format($tampilkanDenda, 0, ',', '.') }}</span>
                     @else
                         <span class="denda-lunas">Rp 0</span>
                     @endif
@@ -113,6 +120,8 @@
                 <td class="text-center">
                     @if($t->status == 'dipinjam')
                         <span class="status-pinjam">PINJAM</span>
+                    @elseif($t->status == 'proses_kembali')
+                        <span class="status-pinjam" style="color: #007bff;">PROSES</span>
                     @else
                         <span class="status-kembali">KEMBALI</span>
                     @endif

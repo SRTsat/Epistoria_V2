@@ -139,21 +139,44 @@ class PeminjamanController extends Controller
     // 5. Export PDF
     public function exportPdf(Request $request) 
     {
-        $tahun = $request->get('tahun', date('Y'));
+        // 1. Samain logic filter tahunnya (bisa 'semua' atau angka tahun)
+        $tahun = $request->get('tahun', 'semua');
 
-        // Filter query berdasarkan tahun
-        $transaksi = Peminjaman::with(['user', 'buku'])
-                    ->whereYear('created_at', $tahun)
-                    ->latest()
-                    ->get();
+        $query = Peminjaman::with(['user', 'buku'])->latest();
 
-        // Sum denda juga harus di-filter per tahun biar akurat
-        $totalDenda = Peminjaman::whereYear('created_at', $tahun)
-                    ->where('denda', '>', 0)
-                    ->sum('denda');
+        if ($tahun !== 'semua') {
+            $query->whereYear('created_at', $tahun);
+        }
+
+        $transaksi = $query->get();
+
+        // 2. HITUNG DENDA SECARA REAL-TIME
+        // Ini kuncinya bro, biar yang statusnya masih 'dipinjam' dendanya nggak 0 di PDF
+        $sekarang = \Carbon\Carbon::now()->startOfDay();
+        $totalDendaKeseluruhan = 0;
+
+        foreach ($transaksi as $t) {
+            if (in_array($t->status, ['dipinjam', 'proses_kembali'])) {
+                $deadline = \Carbon\Carbon::parse($t->deadline)->startOfDay();
+                if ($sekarang->gt($deadline)) {
+                    $selisih = $sekarang->diffInDays($deadline, true);
+                    $t->denda_saat_ini = $selisih * 1000;
+                } else {
+                    $t->denda_saat_ini = 0;
+                }
+            } else {
+                // Jika sudah kembali, pakai nilai denda yang tercatat di DB
+                $t->denda_saat_ini = max(0, $t->denda);
+            }
+            $totalDendaKeseluruhan += $t->denda_saat_ini;
+        }
         
-        $pdf = Pdf::loadView('admin.transaksi.pdf', compact('transaksi', 'totalDenda', 'tahun'))
-                    ->setPaper('a4', 'landscape');
+        // 3. Masukin totalDendaKeseluruhan ke compact
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.transaksi.pdf', [
+            'transaksi' => $transaksi,
+            'totalDenda' => $totalDendaKeseluruhan, 
+            'tahun' => $tahun
+        ])->setPaper('a4', 'landscape');
                     
         return $pdf->download("Laporan-Perpus-$tahun.pdf");
     }
