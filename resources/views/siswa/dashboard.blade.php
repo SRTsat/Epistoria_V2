@@ -7,7 +7,6 @@
          
         <div class="card-body p-4 p-md-5 text-white position-relative" style="z-index: 2;">
             <h2 class="fw-bold">Selamat Datang, {{ Auth::user()->name }}!</h2>
-            <p class="opacity-75">"Buku adalah jendela dunia." Temukan petualangan baru di setiap halaman.</p>
             <a href="{{ route('siswa.katalog') }}" class="btn btn-light rounded-pill px-4 fw-bold text-primary shadow-sm">
                 <i class="bi bi-search me-1"></i> Mulai Cari Buku
             </a>

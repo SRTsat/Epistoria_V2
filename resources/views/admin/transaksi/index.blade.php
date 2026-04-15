@@ -83,9 +83,17 @@
                                 @endif
                             </td>
                             <td>
-                                @if($t->denda > 0)
+                                {{-- 
+                                    Cek denda berjalan ($t->denda_saat_ini) untuk buku yang belum balik, 
+                                    atau denda fix ($t->denda) untuk yang sudah balik 
+                                --}}
+                                @php
+                                    $nilaiDenda = ($t->status == 'dipinjam') ? ($t->denda_saat_ini ?? 0) : $t->denda;
+                                @endphp
+
+                                @if($nilaiDenda > 0)
                                     <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm">
-                                        Rp {{ number_format($t->denda, 0, ',', '.') }}
+                                        Rp {{ number_format($nilaiDenda, 0, ',', '.') }}
                                     </span>
                                 @else
                                     <span class="text-success small fw-bold">
