@@ -12,7 +12,6 @@
         </a>
     </div>
 
-    {{-- LOGIKA HITUNG TOTAL DENDA SAMA DENGAN DASHBOARD --}}
     @php
         $totalDendaLive = 0;
         $hari_ini = \Carbon\Carbon::now()->startOfDay();
@@ -21,11 +20,12 @@
             if ($item->status == 'dipinjam') {
                 $deadline_item = \Carbon\Carbon::parse($item->deadline)->startOfDay();
                 if ($hari_ini->gt($deadline_item)) {
-                    $selisih = $hari_ini->diffInDays($deadline_item);
-                    $totalDendaLive += ($selisih * 1000);
+                    // Gunakan parameter false agar tidak otomatis absolut, lalu max(0) untuk proteksi
+                    $selisih = $hari_ini->diffInDays($deadline_item, false);
+                    $totalDendaLive += (max(0, $selisih) * 1000);
                 }
             } else {
-                $totalDendaLive += $item->denda;
+                $totalDendaLive += max(0, $item->denda);
             }
         }
     @endphp
@@ -52,8 +52,7 @@
                     </div>
                     <div>
                         <small class="text-muted fw-bold d-block">Tunggakan Denda</small>
-                        {{-- SEKARANG PAKAI VARIABEL HASIL HITUNG DI ATAS --}}
-                        <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format($totalDendaLive, 0, ',', '.') }}</h4>
+                        <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format($totalDenda, 0, ',', '.') }}</h4>
                     </div>
                 </div>
             </div>
@@ -83,9 +82,10 @@
                             
                             $dendaBaris = 0;
                             if ($isOverdue) {
-                                $dendaBaris = $hari_ini->diffInDays($deadline) * 1000;
+                                $selisih_baris = $hari_ini->diffInDays($deadline, false);
+                                $dendaBaris = max(0, $selisih_baris) * 1000;
                             } elseif ($p->status == 'dikembalikan') {
-                                $dendaBaris = $p->denda;
+                                $dendaBaris = max(0, $p->denda);
                             }
                         @endphp
                         <tr>
@@ -93,12 +93,9 @@
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
                                         @if($p->buku->foto)
-                                            <img src="{{ asset('storage/buku/'.$p->buku->foto) }}" 
-                                                class="rounded-2 shadow-sm" 
-                                                style="width: 45px; height: 65px; object-fit: cover;">
+                                            <img src="{{ asset('storage/buku/'.$p->buku->foto) }}" class="rounded-2 shadow-sm" style="width: 45px; height: 65px; object-fit: cover;">
                                         @else
-                                            <div class="bg-light rounded-2 d-flex align-items-center justify-content-center" 
-                                                style="width: 45px; height: 65px;">
+                                            <div class="bg-light rounded-2 d-flex align-items-center justify-content-center" style="width: 45px; height: 65px;">
                                                 <i class="bi bi-book text-muted"></i>
                                             </div>
                                         @endif
@@ -116,7 +113,6 @@
                                 <div class="small fw-bold {{ $isOverdue ? 'text-danger' : 'text-dark' }}">
                                     {{ $deadline->format('d M Y') }}
                                 </div>
-
                                 @if($isOverdue)
                                     <span class="badge bg-danger bg-opacity-10 text-danger mt-1" style="font-size: 10px;">Terlambat!</span>
                                 @else
@@ -128,7 +124,6 @@
                                     <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
                                         <i class="bi bi-hourglass-split me-1"></i> Dipinjam
                                     </span>
-                                    {{-- MUNCULIN DENDA BERJALAN DI BARIS --}}
                                     @if($dendaBaris > 0)
                                         <div class="mt-1">
                                             <span class="badge bg-danger rounded-pill px-2">Denda: Rp {{ number_format($dendaBaris, 0, ',', '.') }}</span>
@@ -150,7 +145,7 @@
                                     <form action="{{ route('pinjam.kembali', $p->id) }}" method="POST">
                                         @csrf
                                         <button class="btn btn-success btn-sm px-4 rounded-pill shadow-sm fw-bold border-0" 
-                                                onclick="return confirm('Yakin sudah selesai membaca dan ingin mengembalikan?')">
+                                                onclick="return confirm('Yakin ingin mengembalikan?')">
                                             Kembalikan
                                         </button>
                                     </form>
@@ -166,7 +161,7 @@
                         <tr>
                             <td colspan="5" class="text-center py-5 text-muted">
                                 <i class="bi bi-folder-x fs-1 opacity-25 d-block mb-3"></i>
-                                Kamu belum pernah pinjam buku apapun.
+                                Belum ada riwayat pinjaman.
                             </td>
                         </tr>
                     @endforelse

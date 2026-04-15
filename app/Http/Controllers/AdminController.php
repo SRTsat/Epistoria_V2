@@ -9,27 +9,37 @@ use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
-    public function dashboard() {
-        // Ambil statistik buat ditampilin di Card Dashboard
+   public function dashboard() {
         $total_buku = Buku::count();
         $total_siswa = User::where('role', 'siswa')->count();
         $total_pinjam = Peminjaman::where('status', 'dipinjam')->count();
         
-        // Ngitung semua denda yang sudah terkumpul di database
-        $total_denda = Peminjaman::sum('denda'); 
+        // 1. Denda dari buku yang sudah dikembalikan (Permanen di DB)
+        $denda_permanen = Peminjaman::where('status', 'dikembalikan')->sum('denda'); 
+
+        // 2. Hitung denda Berjalan (Belum balik tapi sudah telat)
+        $hari_ini = now()->startOfDay();
+        $pinjaman_aktif = Peminjaman::where('status', 'dipinjam')->get();
+
+        $denda_berjalan = 0;
+        foreach ($pinjaman_aktif as $p) {
+            $deadline = \Carbon\Carbon::parse($p->deadline)->startOfDay();
+            // Cek jika hari ini sudah melewati deadline
+            if ($hari_ini->gt($deadline)) {
+                // PARAMETER TRUE: Supaya hasil selisih selalu POSITIF
+                $selisih = $hari_ini->diffInDays($deadline, true);
+                $denda_berjalan += ($selisih * 1000);
+            }
+        }
+
+        // Total gabungan (Pastikan max 0 supaya tidak ada keajaiban angka minus)
+        $total_denda = max(0, $denda_permanen + $denda_berjalan);
+
         $recent_activities = Peminjaman::with(['user', 'buku'])->latest('updated_at')->take(5)->get();
-        $populers = Buku::withCount('peminjamans')
-        ->orderBy('peminjamans_count', 'desc')
-        ->take(3)
-        ->get();
+        $populers = Buku::withCount('peminjamans')->orderBy('peminjamans_count', 'desc')->take(3)->get();
 
         return view('admin.dashboard', compact(
-            'total_buku', 
-            'total_siswa', 
-            'total_pinjam', 
-            'total_denda',
-            'recent_activities',
-            'populers'
+            'total_buku', 'total_siswa', 'total_pinjam', 'total_denda', 'recent_activities', 'populers'
         ));
     }
 

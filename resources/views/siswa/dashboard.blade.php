@@ -54,7 +54,8 @@
                     </div>
                     <div>
                         <div class="small text-muted fw-bold">Tunggakan Denda</div>
-                        <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format($totalDenda, 0, ',', '.') }}</h4>
+                        {{-- Proteksi denda agar tidak minus --}}
+                        <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format(max(0, $totalDenda), 0, ',', '.') }}</h4>
                     </div>
                 </div>
             </div>
