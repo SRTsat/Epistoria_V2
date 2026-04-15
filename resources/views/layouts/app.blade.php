@@ -10,6 +10,7 @@
         body { background-color: #f8f9fa; }
         .auth-card { margin-top: 100px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
+    @stack('styles')
 </head>
 <body>
     @yield('content')
