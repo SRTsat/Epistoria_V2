@@ -2,18 +2,15 @@
 
 @section('content')
 <div class="container-fluid py-4" style="background-color: #f8f9fa; min-height: 100vh;">
-    
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-3">
             <div class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label class="small fw-bold text-muted mb-2"><i class="bi bi-tags me-1"></i> Genre (Bisa Pilih Banyak)</label>
+                    <label class="small fw-bold text-muted mb-2"><i class="bi bi-tags me-1"></i> Genre</label>
                     <select id="filter-genre" class="form-select select2" name="genres[]" multiple="multiple">
-                        <option value="Fiksi">Fiksi</option>
-                        <option value="Non-Fiksi">Non-Fiksi</option>
-                        <option value="Novel">Novel</option>
-                        <option value="Edukasi">Edukasi</option>
-                        <option value="Teknologi">Teknologi</option>
+                        @foreach($genres as $g)
+                            <option value="{{ $g->id }}">{{ $g->nama }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -60,26 +57,19 @@
 @endpush
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
 $(document).ready(function() {
-    // Inisialisasi Select2
-    $('#filter-genre').select2({
-        placeholder: "Pilih Genre...",
-        allowClear: true
-    });
-
-    const searchInput = document.getElementById('live-search');
-    const container = document.getElementById('container-buku');
+    $('#filter-genre').select2({ placeholder: "Pilih Genre...", allowClear: true });
 
     function doFilter() {
-        let keyword = searchInput.value;
-        let genres = $('#filter-genre').val(); // Ini bakal dapet Array [ "Fiksi", "Novel" ]
+        let keyword = $('#live-search').val();
+        let genres = $('#filter-genre').val(); // Sekarang isinya array ID [1, 2]
         
         let params = new URLSearchParams();
         if (keyword) params.append('search', keyword);
-        
-        // PENTING: Loop array genre supaya masuk ke params sebagai genres[]
         if (genres && genres.length > 0) {
             genres.forEach(g => params.append('genres[]', g));
         }
@@ -88,16 +78,11 @@ $(document).ready(function() {
             headers: { "X-Requested-With": "XMLHttpRequest" }
         })
         .then(res => res.text())
-        .then(html => {
-            container.innerHTML = html;
-        })
-        .catch(err => console.error("Filter Error:", err));
+        .then(html => { document.getElementById('container-buku').innerHTML = html; });
     }
 
-    searchInput.addEventListener('input', doFilter);
-    $('#filter-genre').on('change', function() {
-        doFilter(); // Select2 butuh trigger change manual
-    });
+    $('#live-search').on('input', doFilter);
+    $('#filter-genre').on('change', doFilter);
 });
 </script>
 @endpush

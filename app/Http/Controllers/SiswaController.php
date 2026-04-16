@@ -43,27 +43,30 @@ class SiswaController extends Controller
     public function katalog(Request $request) 
     {
         $search = $request->search;
-        $genres = $request->genres; 
-        $query = Buku::query();
+        $selectedGenres = $request->genres; 
+        $query = Buku::query()->with('genre');
 
+        // Multi-filter Genre - Ganti ke 'genre_id'
         if ($request->filled('genres')) {
-            $query->whereIn('genre', $genres);
+            $query->whereIn('genre_id', $selectedGenres);
         }
 
         if ($request->filled('search')) {
             $query->where(function($q) use ($search) {
                 $q->where('judul', 'like', "%{$search}%")
-                  ->orWhere('penulis', 'like', "%{$search}%");
+                ->orWhere('penulis', 'like', "%{$search}%");
             });
         }
 
         $bukus = $query->get();
+        $genres = \App\Models\Genre::all(); // Tambahkan ini buat ditampilin di checkbox filter
 
         if ($request->ajax()) {
             return view('siswa._buku_list', compact('bukus'))->render();
         }
 
-        return view('siswa.katalog', compact('bukus'));
+        // Kirim $genres ke view
+        return view('siswa.katalog', compact('bukus', 'genres'));
     }
 
     // Riwayat Pinjaman Siswa

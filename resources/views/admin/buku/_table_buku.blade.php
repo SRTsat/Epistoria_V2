@@ -15,7 +15,9 @@
         <div class="text-muted small" style="font-size: 10px; opacity: 0.7;">Penerbit: {{ $b->penerbit }}</div>
     </td>
     <td>
-        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">{{ $b->genre }}</span>
+        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+            {{ $b->genre->nama ?? 'Umum' }}
+        </span>
     </td>
     <td>
         @if($b->stok <= 5)
@@ -28,9 +30,12 @@
         <div class="d-flex justify-content-center gap-1">
             <button class="btn btn-light btn-sm text-warning shadow-sm border" 
                 data-bs-toggle="modal" data-bs-target="#modalEdit"
-                data-id="{{ $b->id }}" data-judul="{{ $b->judul }}"
-                data-penulis="{{ $b->penulis }}" data-penerbit="{{ $b->penerbit }}"
-                data-genre="{{ $b->genre }}" data-stok="{{ $b->stok }}">
+                data-id="{{ $b->id }}" 
+                data-judul="{{ $b->judul }}"
+                data-penulis="{{ $b->penulis }}" 
+                data-penerbit="{{ $b->penerbit }}"
+                data-genre-id="{{ $b->genre_id }}"
+                data-stok="{{ $b->stok }}"> {{-- TAMBAHKAN INI --}}
                 <i class="bi bi-pencil-square"></i>
             </button>
             <form action="{{ route('buku.destroy', $b->id) }}" method="POST" class="d-inline">

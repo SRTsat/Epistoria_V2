@@ -33,12 +33,10 @@
                         </div>
                         <label class="small fw-bold text-muted mb-0">Filter Genre</label>
                     </div>
-                    <select id="admin-filter-genre" class="form-select select2" name="genres[]" multiple="multiple" data-placeholder="Semua Genre...">
-                        <option value="Fiksi">Fiksi</option>
-                        <option value="Non-Fiksi">Non-Fiksi</option>
-                        <option value="Novel">Novel</option>
-                        <option value="Edukasi">Edukasi</option>
-                        <option value="Teknologi">Teknologi</option>
+                    <select id="admin-filter-genre" class="form-select select2" name="genres[]" multiple="multiple">
+                        @foreach($genres as $g)
+                            <option value="{{ $g->id }}">{{ $g->nama }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>
@@ -142,23 +140,16 @@
 
 <script>
     $(document).ready(function() {
-        // Init Select2
-        $('#admin-filter-genre').select2({
-            placeholder: "Pilih genre...",
-            allowClear: true
-        });
+        $('#admin-filter-genre').select2({ placeholder: "Pilih genre..." });
 
-        const searchInput = document.getElementById('admin-live-search');
-        const tableBody = document.getElementById('tabel-buku');
-
-        // Fungsi AJAX Fetch Data
-        function fetchAdminData() {
-            let keyword = searchInput.value;
+        // FUNGSI FILTER AJAX (BIAR JALAN)
+        function doFilter() {
+            let keyword = $('#admin-live-search').val();
             let genres = $('#admin-filter-genre').val();
-
+            
             let params = new URLSearchParams();
-            if(keyword) params.append('search', keyword);
-            if(genres && genres.length > 0) {
+            if (keyword) params.append('search', keyword);
+            if (genres && genres.length > 0) {
                 genres.forEach(g => params.append('genres[]', g));
             }
 
@@ -166,29 +157,27 @@
                 headers: { "X-Requested-With": "XMLHttpRequest" }
             })
             .then(res => res.text())
-            .then(html => {
-                tableBody.innerHTML = html;
-            })
-            .catch(err => console.error("Error:", err));
+            .then(html => { 
+                document.getElementById('tabel-buku').innerHTML = html; 
+            });
         }
 
-        // Event Listeners
-        searchInput.addEventListener('input', fetchAdminData);
-        $('#admin-filter-genre').on('change', fetchAdminData);
+        // Trigger filter pas input berubah
+        $('#admin-live-search').on('input', doFilter);
+        $('#admin-filter-genre').on('change', doFilter);
 
-        // Modal Edit Data Passing
+        // Script modal edit (tetap sama)
         const modalEdit = document.getElementById('modalEdit');
         if (modalEdit) {
             modalEdit.addEventListener('show.bs.modal', function (event) {
                 const btn = event.relatedTarget;
                 const form = document.getElementById('formEdit');
-                
                 form.action = `/admin/buku/${btn.getAttribute('data-id')}`;
                 document.getElementById('edit-judul').value = btn.getAttribute('data-judul');
                 document.getElementById('edit-penulis').value = btn.getAttribute('data-penulis');
                 document.getElementById('edit-penerbit').value = btn.getAttribute('data-penerbit');
-                document.getElementById('edit-genre').value = btn.getAttribute('data-genre');
                 document.getElementById('edit-stok').value = btn.getAttribute('data-stok');
+                document.getElementById('edit-genre').value = btn.getAttribute('data-genre-id');
             });
         }
     });

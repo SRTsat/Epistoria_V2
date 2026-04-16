@@ -101,6 +101,9 @@
             <a class="nav-link {{ request()->is('admin/transaksi*') ? 'active' : '' }}" href="{{ url('/admin/transaksi') }}">
                 <i class="bi bi-cart-check me-2"></i> Data Transaksi
             </a>
+            <a href="{{ route('genre.index') }}" class="nav-link">
+                <i class="bi bi-tags"></i> Kelola Genre
+            </a>
             <hr>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf

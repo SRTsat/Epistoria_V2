@@ -26,13 +26,11 @@
                         <div class="row mt-3">
                             <div class="col-6">
                                 <label class="form-label small fw-bold text-muted">Genre</label>
-                                <select name="genre" class="form-select rounded-3 bg-light border-0 px-3 py-2" required>
-                                    <option value="">Pilih...</option>
-                                    <option value="Fiksi">Fiksi</option>
-                                    <option value="Non-Fiksi">Non-Fiksi</option>
-                                    <option value="Novel">Novel</option>
-                                    <option value="Edukasi">Edukasi</option>
-                                    <option value="Teknologi">Teknologi</option>
+                                <select name="genre_id" id="edit-genre" class="form-select" required>
+                                    <option value="">Pilih Genre</option>
+                                    @foreach($genres as $g)
+                                        <option value="{{ $g->id }}">{{ $g->nama }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-6">

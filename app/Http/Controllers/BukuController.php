@@ -10,15 +10,15 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class BukuController extends Controller
 {
     // Menampilkan list buku & Fitur Pencarian 
-    public function index(Request $request) {
+   public function index(Request $request) {
         $search = $request->search;
-        $genres = $request->genres; // Sekarang nerima array
+        $selectedGenres = $request->genres; // Pakai nama variabel beda biar gak bentrok
 
-        $query = \App\Models\Buku::query();
+        $query = \App\Models\Buku::query()->with('genre');
 
-        // Multi-filter Genre
+        // Multi-filter Genre - Ganti ke 'genre_id'
         if ($request->filled('genres')) {
-            $query->whereIn('genre', $genres);
+            $query->whereIn('genre_id', $selectedGenres);
         }
 
         // Live Search
@@ -30,12 +30,14 @@ class BukuController extends Controller
         }
 
         $bukus = $query->get();
+        $genres = \App\Models\Genre::all(); // Ambil semua data genre untuk pilihan filter di view
 
         if ($request->ajax()) {
             return view('admin.buku._table_buku', compact('bukus'))->render();
         }
 
-        return view('admin.buku.index', compact('bukus'));
+        // Pastikan $genres dikirim ke view index
+        return view('admin.buku.index', compact('bukus', 'genres'));
     }
 
     // Simpan buku baru (Create) [cite: 88]
@@ -45,7 +47,7 @@ class BukuController extends Controller
             'judul' => 'required',
             'penulis' => 'required',
             'penerbit' => 'required',
-            'genre' => 'required',
+            'genre_id' => 'required|exists:genres,id',
             'stok' => 'required|integer|min:0',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048' 
         ]);
@@ -80,7 +82,7 @@ class BukuController extends Controller
                 'judul' => 'required',
                 'penulis' => 'required',
                 'penerbit' => 'required',
-                'genre' => 'required',
+                'genre_id' => 'required|exists:genres,id',
                 'stok' => 'required|integer',
                 'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
             ]);

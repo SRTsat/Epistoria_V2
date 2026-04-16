@@ -6,6 +6,7 @@ use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\PeminjamanController;
+use App\Http\Controllers\GenreController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -27,7 +28,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-
+    Route::resource('genre', GenreController::class);
     // CRUD Buku
     Route::resource('buku', BukuController::class);
     Route::patch('/transaksi/{id}/kembalikan', [PeminjamanController::class, 'kembalikan'])->name('admin.transaksi.kembali');
