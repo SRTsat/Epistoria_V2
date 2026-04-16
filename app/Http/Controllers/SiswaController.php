@@ -67,29 +67,34 @@ class SiswaController extends Controller
     }
 
     // Riwayat Pinjaman Siswa
-   public function indexPinjam() 
+  public function indexPinjam() 
     {
         $userId = Auth::id();
         $pinjaman = Peminjaman::where('user_id', $userId)->with('buku')->latest()->get();
         
-        $totalDenda = 0;
-        $sekarang = Carbon::now()->startOfDay();
+        $totalDendaLive = 0;
+        $sekarang = \Carbon\Carbon::now()->startOfDay();
 
         foreach ($pinjaman as $p) {
-            if ($p->status == 'dipinjam') {
-                $deadline = Carbon::parse($p->deadline)->startOfDay();
+            // Hitung denda tiap baris dan tempelkan ke objek $p
+            if (in_array($p->status, ['dipinjam', 'proses_kembali'])) {
+                $deadline = \Carbon\Carbon::parse($p->deadline)->startOfDay();
                 if ($sekarang->gt($deadline)) {
                     $selisih = $sekarang->diffInDays($deadline, true);
-                    $totalDenda += ($selisih * 1000);
+                    $p->denda_final = $selisih * 1000; 
+                } else {
+                    $p->denda_final = 0;
                 }
             } else {
-                $totalDenda += max(0, $p->denda);
+                $p->denda_final = max(0, $p->denda);
             }
+            
+            // Tambahkan ke total keseluruhan
+            $totalDendaLive += $p->denda_final;
         }
         
-        return view('siswa.pinjam', compact('pinjaman', 'totalDenda'));
+        return view('siswa.pinjam', compact('pinjaman', 'totalDendaLive'));
     }
-
     // Proses Pinjam
     public function pinjamBuku(Request $request) 
     {

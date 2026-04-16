@@ -74,10 +74,10 @@
             <div class="card border-0 shadow-sm overflow-hidden" style="background: linear-gradient(45deg, #e74a3b, #be2617);">
                 <div class="card-body p-4 text-white">
                     <div class="d-flex justify-content-between">
-                        <div>
-                            <div class="text-white-50 small fw-bold text-uppercase mb-1">Kas Denda</div>
-                            <h4 class="fw-bold mb-0">Rp {{ number_format($total_denda, 0, ',', '.') }}</h4>
-                        </div>
+                            <div>
+                                <div class="text-white-50 small fw-bold text-uppercase mb-1">Kas Denda</div>
+                                <h4 class="fw-bold mb-0">Rp {{ number_format($total_denda, 0, ',', '.') }}</h4>
+                            </div>
                         <div class="bg-white bg-opacity-25 rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
                             <i class="bi bi-cash-coin fs-3"></i>
                         </div>

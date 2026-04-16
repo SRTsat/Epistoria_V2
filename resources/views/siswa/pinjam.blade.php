@@ -12,25 +12,6 @@
         </a>
     </div>
 
-    @php
-        $hari_ini = \Carbon\Carbon::now()->startOfDay();
-        $totalDendaLive = 0;
-
-        foreach ($pinjaman as $item) {
-            // Hitung denda berjalan hanya jika statusnya dipinjam atau sedang proses balik
-            if (in_array($item->status, ['dipinjam', 'proses_kembali'])) {
-                $deadline_item = \Carbon\Carbon::parse($item->deadline)->startOfDay();
-                if ($hari_ini->gt($deadline_item)) {
-                    $selisih = $hari_ini->diffInDays($deadline_item, false);
-                    $totalDendaLive += (max(0, $selisih) * 1000);
-                }
-            } else {
-                // Untuk status dikembalikan, ambil nilai denda yang sudah fix di DB
-                $totalDendaLive += max(0, $item->denda);
-            }
-        }
-    @endphp
-
     <div class="row g-3 mb-4">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm rounded-4 bg-white p-3">
@@ -40,7 +21,6 @@
                     </div>
                     <div>
                         <small class="text-muted fw-bold d-block">Sedang Kamu Baca</small>
-                        {{-- Hitung buku yang beneran lagi dipegang (status dipinjam atau proses balik) --}}
                         <h4 class="fw-bold mb-0 text-dark">
                             {{ $pinjaman->whereIn('status', ['dipinjam', 'proses_kembali'])->count() }} Buku
                         </h4>
@@ -56,6 +36,7 @@
                     </div>
                     <div>
                         <small class="text-muted fw-bold d-block">Tunggakan Denda</small>
+                        {{-- Ambil dari variabel totalDendaLive yang dikirim Controller --}}
                         <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format($totalDendaLive, 0, ',', '.') }}</h4>
                     </div>
                 </div>
@@ -81,16 +62,9 @@
                 <tbody>
                     @forelse($pinjaman as $p)
                         @php
-                            $deadline = \Carbon\Carbon::parse($p->deadline)->startOfDay();
-                            $isOverdue = $hari_ini->gt($deadline) && in_array($p->status, ['dipinjam', 'proses_kembali']);
-                            
-                            $dendaBaris = 0;
-                            if ($isOverdue) {
-                                $selisih_baris = $hari_ini->diffInDays($deadline, false);
-                                $dendaBaris = max(0, $selisih_baris) * 1000;
-                            } elseif ($p->status == 'dikembalikan') {
-                                $dendaBaris = max(0, $p->denda);
-                            }
+                            // Cek keterlambatan cuma buat warna teks (logic denda udah di controller)
+                            $isOverdue = \Carbon\Carbon::now()->startOfDay()->gt(\Carbon\Carbon::parse($p->deadline)->startOfDay()) 
+                                         && in_array($p->status, ['dipinjam', 'proses_kembali']);
                         @endphp
                         <tr>
                             <td class="ps-4">
@@ -124,37 +98,27 @@
                                 @endif
                             </td>
                             <td>
-                                {{-- LOGIKA STATUS BARU --}}
                                 @if($p->status == 'menunggu')
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
-                                        <i class="bi bi-hourglass me-1"></i> Menunggu ACC
-                                    </span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">Menunggu ACC</span>
                                 @elseif($p->status == 'dipinjam')
-                                    <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
-                                        <i class="bi bi-book me-1"></i> Sedang Dipinjam
-                                    </span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">Sedang Dipinjam</span>
                                 @elseif($p->status == 'proses_kembali')
-                                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">
-                                        <i class="bi bi-arrow-repeat me-1"></i> Menunggu Konfirmasi
-                                    </span>
+                                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">Menunggu Konfirmasi</span>
                                 @else
-                                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
-                                        <i class="bi bi-check-circle me-1"></i> Sudah Kembali
-                                    </span>
+                                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Sudah Kembali</span>
                                 @endif
 
-                                {{-- INFO DENDA --}}
-                                @if($dendaBaris > 0)
+                                {{-- INFO DENDA: Panggil denda_final yang sudah dihitung di controller --}}
+                                @if($p->denda_final > 0)
                                     <div class="mt-1">
                                         <span class="badge bg-danger rounded-pill px-2" style="font-size: 10px;">
-                                            Rp {{ number_format($dendaBaris, 0, ',', '.') }}
+                                            Rp {{ number_format($p->denda_final, 0, ',', '.') }}
                                         </span>
                                     </div>
                                 @endif
                             </td>
                             <td class="text-center pe-4">
                                 @if($p->status == 'dipinjam')
-                                    {{-- Tombol Lapor Balik --}}
                                     <form action="{{ route('pinjam.kembali', $p->id) }}" method="POST">
                                         @csrf
                                         <button class="btn btn-success btn-sm px-4 rounded-pill shadow-sm fw-bold border-0" 
@@ -162,24 +126,16 @@
                                             Kembalikan
                                         </button>
                                     </form>
-                                @elseif($p->status == 'menunggu')
-                                    <small class="text-muted small">Tunggu admin ACC</small>
                                 @elseif($p->status == 'proses_kembali')
-                                    <span class="text-info small fw-bold">Serahkan Buku Ke Meja Admin</span>
+                                    <span class="text-info small fw-bold">Serahkan Buku</span>
                                 @else
-                                    <span class="text-muted small">
-                                        Selesai:<br>
-                                        <span class="fw-bold text-dark">{{ $p->tanggal_kembali ? \Carbon\Carbon::parse($p->tanggal_kembali)->format('d/m/y') : '-' }}</span>
-                                    </span>
+                                    <small class="text-muted">Selesai</small>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="bi bi-folder-x fs-1 opacity-25 d-block mb-3"></i>
-                                Belum ada riwayat pinjaman.
-                            </td>
+                            <td colspan="5" class="text-center py-5 text-muted">Belum ada riwayat pinjaman.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -187,22 +143,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    body { background-color: #f8f9fa; }
-    .table thead th {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #6c757d;
-        font-weight: 700;
-        padding: 15px;
-    }
-    .table tbody td {
-        padding: 15px;
-        border-color: #f1f3f5;
-    }
-    .card { border: none; }
-    .badge { font-weight: 600; }
-</style>
 @endsection
