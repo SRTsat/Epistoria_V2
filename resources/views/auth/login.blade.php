@@ -32,8 +32,20 @@
                         </div>
                         
                         @if(session('success'))
-                            <div class="alert alert-success border-0 rounded-4 small mb-4">
-                                <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+                            <div class="alert alert-success border-0 rounded-4 small mb-4 shadow-sm">
+                                <div class="d-flex">
+                                    <i class="bi bi-check-circle-fill me-2 mt-1"></i>
+                                    <div>
+                                        <span class="fw-bold">Berhasil!</span><br>
+                                        {{ session('success') }}
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                        {{-- Tambahkan alert untuk link verifikasi yang dikirim ulang --}}
+                        @if (session('resent'))
+                            <div class="alert alert-info border-0 rounded-4 small mb-4 shadow-sm">
+                                <i class="bi bi-info-circle-fill me-2"></i> Link verifikasi baru sudah dikirim ke email lu!
                             </div>
                         @endif
 

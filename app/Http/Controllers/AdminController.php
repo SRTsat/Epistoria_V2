@@ -61,19 +61,23 @@ class AdminController extends Controller
     public function storeAnggota(Request $request) {
         $request->validate([
             'name' => 'required',
+            'email' => 'required|email|unique:users', // Tambahkan ini
             'username' => 'required|unique:users',
             'password' => 'required|min:6',
-            'role' => 'required|in:admin,siswa' // Validasi role
+            'role' => 'required|in:admin,siswa'
         ]);
 
         User::create([
             'name' => $request->name,
+            'email' => $request->email,
             'username' => $request->username,
             'password' => bcrypt($request->password),
-            'role' => $request->role // Simpan sesuai input
+            'role' => $request->role,
+            // LANGSUNG AKTIF: Karena admin yang buat, kita anggap email sudah valid
+            'email_verified_at' => now(), 
         ]);
 
-        return back()->with('success', 'Akun berhasil ditambahkan!');
+        return back()->with('success', 'Akun berhasil ditambahkan dan sudah aktif!');
     }
 
     // Update data siswa

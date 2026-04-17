@@ -2,7 +2,6 @@
 
 @section('content')
 
-<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg bg-white shadow-sm fixed-top py-3">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center fw-bold" href="{{ route('siswa.dashboard') }}">
@@ -34,6 +33,7 @@
                         <form action="{{ url('/register') }}" method="POST">
                             @csrf
                             
+                            {{-- NAMA LENGKAP --}}
                             <div class="form-floating mb-3">
                                 <input type="text" name="name" class="form-control border-0 rounded-4" id="regName" placeholder="Nama Lengkap" required value="{{ old('name') }}">
                                 <label for="regName" class="text-muted">
@@ -41,6 +41,7 @@
                                 </label>
                             </div>
 
+                            {{-- USERNAME --}}
                             <div class="form-floating mb-3">
                                 <input type="text" name="username" class="form-control border-0 rounded-4 @error('username') is-invalid @enderror" id="regUser" placeholder="Username" required value="{{ old('username') }}">
                                 <label for="regUser" class="text-muted">
@@ -51,13 +52,31 @@
                                 @enderror
                             </div>
 
+                            {{-- EMAIL (TAMBAHAN BARU) --}}
+                            <div class="form-floating mb-3">
+                                <input type="email" name="email" class="form-control border-0 rounded-4 @error('email') is-invalid @enderror" id="regEmail" placeholder="Email" required value="{{ old('email') }}">
+                                <label for="regEmail" class="text-muted">
+                                    <i class="bi bi-envelope me-2"></i>Alamat Email
+                                </label>
+                                @error('email') 
+                                    <div class="invalid-feedback ps-2">{{ $message }}</div> 
+                                @enderror
+                                <div class="form-text small ps-2 text-info">
+                                    <i class="bi bi-info-circle me-1"></i>Kami akan mengirim link aktivasi ke email ini.
+                                </div>
+                            </div>
+
+                            {{-- PASSWORD --}}
                             <div class="row g-2">
                                 <div class="col-md-6">
                                     <div class="form-floating mb-3">
-                                        <input type="password" name="password" class="form-control border-0 rounded-4" id="regPass" placeholder="Password" required>
+                                        <input type="password" name="password" class="form-control border-0 rounded-4 @error('password') is-invalid @enderror" id="regPass" placeholder="Password" required>
                                         <label for="regPass" class="text-muted">
                                             <i class="bi bi-lock me-2"></i>Password
                                         </label>
+                                        @error('password')
+                                            <div class="invalid-feedback ps-2">{{ $message }}</div>
+                                        @enderror
                                     </div>
                                 </div>
                                 <div class="col-md-6">

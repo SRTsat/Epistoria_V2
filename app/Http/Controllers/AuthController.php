@@ -23,9 +23,18 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+            $user = Auth::user();
+
+            // Cek apakah user sudah verifikasi email (opsional untuk pesan khusus)
+            if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+                // User akan otomatis diarahkan ke /email/verify oleh middleware 'verified'
+                // Tapi kita pastikan redirect ke dashboard dulu biar middleware-nya bekerja
+                return $user->role === 'admin' 
+                    ? redirect()->intended('/admin/dashboard') 
+                    : redirect()->intended('/siswa/dashboard');
+            }
             
-            // Redirect berdasarkan Role [cite: 133, 134]
-            return Auth::user()->role === 'admin' 
+            return $user->role === 'admin' 
                 ? redirect()->intended('/admin/dashboard') 
                 : redirect()->intended('/siswa/dashboard');
         }
@@ -42,18 +51,23 @@ class AuthController extends Controller
     public function register(Request $request) {
         $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users', // Tambahkan ini
             'username' => 'required|string|unique:users',
             'password' => 'required|min:6|confirmed',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
+            'email' => $request->email, // Simpan email
             'username' => $request->username,
             'password' => Hash::make($request->password),
-            'role' => 'siswa', // Default pendaftar adalah siswa
+            'role' => 'siswa',
         ]);
 
-        return redirect('/login')->with('success', 'Pendaftaran berhasil, silakan login!');
+        // TRIGGER EMAIL: Mengirim email verifikasi secara otomatis
+        event(new \Illuminate\Auth\Events\Registered($user));
+
+        return redirect('/login')->with('success', 'Pendaftaran berhasil! Silakan cek email kamu untuk aktivasi akun.');
     }
 
     public function logout(Request $request) {
