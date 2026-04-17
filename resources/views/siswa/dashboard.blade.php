@@ -84,7 +84,7 @@
                     @endif
                 </div>
                 <div class="card-body pt-2">
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 10px;">{{ $b->genre }}</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 10px;">{{ $b->genre->nama ?? 'Umum' }}</span>
                     <h6 class="fw-bold mb-1 text-truncate text-dark">{{ $b->judul }}</h6>
                     <p class="text-muted mb-3" style="font-size: 12px;">{{ $b->penulis }}</p>
                     <a href="{{ route('siswa.katalog') }}" class="btn btn-primary w-100 rounded-pill btn-sm shadow-sm">Pinjam</a>
