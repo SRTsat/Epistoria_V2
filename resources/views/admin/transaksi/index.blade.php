@@ -39,7 +39,6 @@
                 <div class="col-auto">
                     <select name="tahun" class="form-select form-select-sm rounded-pill px-3 border-primary">
                         <option value="semua" {{ $tahun == 'semua' ? 'selected' : '' }}>-- Semua Tahun --</option>
-                        
                         @foreach($list_tahun as $lt)
                             <option value="{{ $lt->tahun }}" {{ $tahun == $lt->tahun ? 'selected' : '' }}>
                                 Tahun {{ $lt->tahun }}
@@ -135,44 +134,82 @@
                             </td>
                             <td class="text-center">
                                 @if($t->status == 'menunggu')
-                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2 rounded-pill">
-                                        Menunggu ACC
-                                    </span>
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2 rounded-pill">Menunggu ACC</span>
                                 @elseif($t->status == 'dipinjam')
-                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill">
-                                        Dipinjam
-                                    </span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill">Dipinjam</span>
                                 @elseif($t->status == 'proses_kembali')
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
-                                        Proses Balik
-                                    </span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">Proses Balik</span>
+                                @elseif($t->status == 'rusak')
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">Buku Rusak</span>
+                                @elseif($t->status == 'hilang')
+                                    <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 px-3 py-2 rounded-pill">Buku Hilang</span>
                                 @else
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
-                                        Selesai
-                                    </span>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Selesai</span>
                                 @endif
                             </td>
                             <td class="text-center px-4">
                                 @if($t->status == 'menunggu')
                                     <form action="{{ route('admin.transaksi.approve', $t->id) }}" method="POST" class="d-inline">
                                         @csrf @method('PATCH')
-                                        <button class="btn btn-sm btn-warning text-white rounded-pill px-3">Setujui</button>
+                                        <button class="btn btn-sm btn-warning text-white rounded-pill px-3 shadow-sm">Setujui</button>
                                     </form>
-                                @elseif($t->status == 'proses_kembali')
-                                    <form action="{{ route('admin.transaksi.kembali', $t->id) }}" method="POST" class="d-inline">
-                                        @csrf @method('PATCH')
-                                        <button class="btn btn-sm btn-primary rounded-pill px-3">Terima Buku</button>
-                                    </form>
-                                @elseif($t->status == 'dikembalikan' && $t->denda > 0)
+                                @elseif($t->status == 'proses_kembali' || $t->status == 'dipinjam')
+                                    {{-- TOMBOL PEMICU MODAL --}}
+                                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTerima{{ $t->id }}">
+                                        Terima Buku
+                                    </button>
+                                @elseif(in_array($t->status, ['dikembalikan', 'rusak', 'hilang']) && $t->denda > 0)
                                     <form action="{{ route('admin.transaksi.bayar', $t->id) }}" method="POST" class="d-inline">
                                         @csrf @method('PATCH')
-                                        <button class="btn btn-sm btn-success rounded-pill px-3">Bayar Denda</button>
+                                        <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">Bayar Denda</button>
                                     </form>
                                 @else
                                     <i class="bi bi-check2-all text-success fs-5"></i>
                                 @endif
                             </td>
                         </tr>
+
+                        {{-- MODAL KONFIRMASI TERIMA (Letakkan di dalam loop agar ID-nya unik) --}}
+                        <div class="modal fade" id="modalTerima{{ $t->id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <form action="{{ route('admin.transaksi.konfirmasi', $t->id) }}" method="POST">
+                                    @csrf @method('PATCH')
+                                    <div class="modal-content border-0 shadow rounded-4 text-start">
+                                        <div class="modal-header border-0 pb-0">
+                                            <h5 class="fw-bold text-dark">Konfirmasi Terima Buku</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body py-3">
+                                            <p class="text-muted small mb-4">Cek fisik buku <strong>{{ $t->buku->judul }}</strong> sebelum konfirmasi.</p>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold small">Kondisi Buku Fisik</label>
+                                                <select name="kondisi" class="form-select border-0 bg-light rounded-3" required>
+                                                    <option value="normal">Normal (Bagus)</option>
+                                                    <option value="rusak">Rusak (Robek/Coret)</option>
+                                                    <option value="hilang">Hilang (Buku Raib)</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label fw-bold small">Denda Tambahan (Biaya Ganti Rugi)</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text border-0 bg-light rounded-start-3">Rp</span>
+                                                    <input type="number" name="denda_tambahan" class="form-control border-0 bg-light rounded-end-3" placeholder="0">
+                                                </div>
+                                                <small class="text-muted" style="font-size: 10px;">*Denda keterlambatan (jika ada) akan ditambah otomatis.</small>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-0 pt-0">
+                                            <button type="button" class="btn btn-sm btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">Simpan Data</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {{-- END MODAL --}}
+
                         @empty
                         <tr>
                             <td colspan="7" class="text-center py-5">
@@ -198,5 +235,6 @@
     }
     .table-hover tbody tr:hover { background-color: #f8fafc; }
     .btn:hover { transform: translateY(-1px); transition: 0.2s; }
+    .modal-backdrop { opacity: 0.4 !important; }
 </style>
 @endpush

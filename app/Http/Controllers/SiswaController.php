@@ -11,7 +11,7 @@ use Carbon\Carbon;
 class SiswaController extends Controller
 {
     // Dashboard Siswa
-   public function index() 
+     public function index() 
     {
         $userId = Auth::id();
         $pinjamans = Peminjaman::where('user_id', $userId)->get();
@@ -20,19 +20,20 @@ class SiswaController extends Controller
         $sekarang = now()->startOfDay();
 
         foreach ($pinjamans as $p) {
-            if ($p->status == 'dipinjam') {
+            // Tambahin 'proses_kembali' di sini bro
+            if (in_array($p->status, ['dipinjam', 'proses_kembali'])) {
                 $deadline = \Carbon\Carbon::parse($p->deadline)->startOfDay();
                 if ($sekarang->gt($deadline)) {
-                    // Tambahkan TRUE agar tidak 0 atau minus
                     $selisih = $sekarang->diffInDays($deadline, true);
                     $totalDenda += ($selisih * 1000); 
                 }
             } else {
+                // Ini untuk status 'dikembalikan', 'rusak', atau 'hilang' yang dendanya sudah fix di DB
                 $totalDenda += max(0, $p->denda); 
             }
         }
 
-        $totalDipinjam = $pinjamans->where('status', 'dipinjam')->count();
+        $totalDipinjam = $pinjamans->whereIn('status', ['dipinjam', 'proses_kembali'])->count();
         $totalRiwayat = $pinjamans->count();
         $bukuTerbaru = Buku::latest()->take(4)->get();
 

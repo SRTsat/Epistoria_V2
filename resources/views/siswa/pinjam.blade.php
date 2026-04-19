@@ -36,7 +36,6 @@
                     </div>
                     <div>
                         <small class="text-muted fw-bold d-block">Tunggakan Denda</small>
-                        {{-- Ambil dari variabel totalDendaLive yang dikirim Controller --}}
                         <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format($totalDendaLive, 0, ',', '.') }}</h4>
                     </div>
                 </div>
@@ -62,9 +61,15 @@
                 <tbody>
                     @forelse($pinjaman as $p)
                         @php
-                            // Cek keterlambatan cuma buat warna teks (logic denda udah di controller)
                             $isOverdue = \Carbon\Carbon::now()->startOfDay()->gt(\Carbon\Carbon::parse($p->deadline)->startOfDay()) 
                                          && in_array($p->status, ['dipinjam', 'proses_kembali']);
+                            
+                            // Hitung denda telat live untuk tampilan (asumsi 1000/hari)
+                            $denda_telat_live = 0;
+                            if($isOverdue) {
+                                $hari = \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($p->deadline)->startOfDay());
+                                $denda_telat_live = $hari * 1000;
+                            }
                         @endphp
                         <tr>
                             <td class="ps-4">
@@ -98,21 +103,34 @@
                                 @endif
                             </td>
                             <td>
+                                {{-- Status Badges --}}
                                 @if($p->status == 'menunggu')
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">Menunggu ACC</span>
                                 @elseif($p->status == 'dipinjam')
                                     <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">Sedang Dipinjam</span>
                                 @elseif($p->status == 'proses_kembali')
-                                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">Menunggu Konfirmasi</span>
+                                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">Proses Balik</span>
+                                @elseif($p->status == 'rusak')
+                                    <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">Buku Rusak</span>
+                                @elseif($p->status == 'hilang')
+                                    <span class="badge bg-dark bg-opacity-10 text-dark px-3 py-2 rounded-pill">Buku Hilang</span>
                                 @else
                                     <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Sudah Kembali</span>
                                 @endif
 
-                                {{-- INFO DENDA: Panggil denda_final yang sudah dihitung di controller --}}
-                                @if($p->denda_final > 0)
+                                {{-- INFO DENDA DENGAN PENJELASAN --}}
+                                @php
+                                    $current_denda = in_array($p->status, ['dipinjam', 'proses_kembali']) ? $denda_telat_live : $p->denda;
+                                @endphp
+
+                                @if($current_denda > 0)
                                     <div class="mt-1">
-                                        <span class="badge bg-danger rounded-pill px-2" style="font-size: 10px;">
-                                            Rp {{ number_format($p->denda_final, 0, ',', '.') }}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1 shadow-sm cursor-pointer" 
+                                              data-bs-toggle="popover" 
+                                              data-bs-trigger="hover focus"
+                                              title="Rincian Denda" 
+                                              data-bs-content="Denda ini mencakup keterlambatan dan kondisi fisik buku yang dicek oleh admin.">
+                                            Rp {{ number_format($current_denda, 0, ',', '.') }} <i class="bi bi-info-circle ms-1"></i>
                                         </span>
                                     </div>
                                 @endif
@@ -127,15 +145,21 @@
                                         </button>
                                     </form>
                                 @elseif($p->status == 'proses_kembali')
-                                    <span class="text-info small fw-bold">Serahkan Buku</span>
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="text-info small fw-bold">Serahkan Buku</span>
+                                        <small class="text-muted" style="font-size: 10px;">Temui Pustakawan</small>
+                                    </div>
                                 @else
-                                    <small class="text-muted">Selesai</small>
+                                    <i class="bi bi-check2-all text-success fs-5"></i>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">Belum ada riwayat pinjaman.</td>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-emoji-smile d-block fs-1 opacity-25 mb-2"></i>
+                                Belum ada riwayat pinjaman.
+                            </td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -144,3 +168,13 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Aktifkan Popover Bootstrap biar siswa bisa hover liat info denda
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl)
+    })
+</script>
+@endpush

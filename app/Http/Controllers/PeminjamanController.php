@@ -191,30 +191,46 @@ class PeminjamanController extends Controller
         return back()->with('success', 'Buku resmi dipinjamkan!');
     }
 
-    public function konfirmasiTerima($id) 
+    public function konfirmasiTerima(Request $request, $id) 
     {
-        $pinjam = Peminjaman::findOrFail($id);
+        $request->validate([
+            'kondisi' => 'required|in:normal,rusak,hilang',
+            'denda_tambahan' => 'nullable|numeric|min:0'
+        ]);
 
-        // Itung Denda (Pindahkan logika lu ke sini)
+        $pinjam = Peminjaman::findOrFail($id);
+        $buku = $pinjam->buku;
+
+        // 2. Hitung Denda Telat Otomatis
         $sekarang = Carbon::now()->startOfDay();
         $deadline = Carbon::parse($pinjam->deadline)->startOfDay();
-        $denda = 0;
+        $denda_telat = 0;
 
         if ($sekarang->gt($deadline)) {
-            $selisih_hari = $sekarang->diffInDays($deadline);
-            $denda = $selisih_hari * 1000; 
+            // CRITICAL: Tambahin parameter true biar hasilnya selalu POSITIF
+            $selisih_hari = $sekarang->diffInDays($deadline, true);
+            $denda_telat = $selisih_hari * 1000; 
         }
+
+        // 3. Gabungkan dengan Denda Tambahan (Manual)
+        $denda_fisik = $request->denda_tambahan ?? 0;
+        $total_denda = $denda_telat + $denda_fisik;
+
+        // 4. Update Status & Denda
+        $status_final = ($request->kondisi === 'normal') ? 'dikembalikan' : $request->kondisi;
 
         $pinjam->update([
             'tanggal_kembali' => Carbon::now(),
-            'status' => 'dikembalikan', // Sekarang statusnya resmi balik
-            'denda' => $denda 
+            'status' => $status_final,
+            'denda' => $total_denda 
         ]);
 
-        // Stok baru nambah pas Admin yang klik
-        $pinjam->buku->increment('stok');
+        // 5. Update Stok
+        if ($request->kondisi !== 'hilang') {
+            $buku->increment('stok');
+        }
 
-        return back()->with('success', 'Buku diterima! Status diperbarui.');
+        return back()->with('success', "Buku diproses! Telat: Rp".number_format($denda_telat)." + Fisik: Rp".number_format($denda_fisik)." = Total: Rp".number_format($total_denda));
     }
     
     // 6. Export Excel

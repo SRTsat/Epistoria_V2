@@ -46,15 +46,19 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-danger border-4">
-                <div class="card-body d-flex align-items-center p-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-danger border-4">
+                <div class="d-flex align-items-center">
                     <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-4 me-3">
-                        <i class="bi bi-wallet2 fs-3"></i>
+                        <i class="bi bi-cash-stack fs-3"></i>
                     </div>
                     <div>
-                        <div class="small text-muted fw-bold">Tunggakan Denda</div>
-                        {{-- Proteksi denda agar tidak minus --}}
+                        <div class="small text-muted fw-bold text-uppercase" style="font-size: 10px;">Tunggakan Denda</div>
                         <h4 class="fw-bold mb-0 text-danger">Rp {{ number_format(max(0, $totalDenda), 0, ',', '.') }}</h4>
+                        
+                        {{-- Tambahin info ini bro --}}
+                        <small class="text-muted" style="font-size: 10px;">
+                            <i class="bi bi-info-circle"></i> Termasuk denda telat berjalan
+                        </small>
                     </div>
                 </div>
             </div>
