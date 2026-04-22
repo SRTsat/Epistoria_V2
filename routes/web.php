@@ -30,18 +30,20 @@ Route::middleware('guest')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    // Halaman pemberitahuan verifikasi email
+    // 1. Halaman pemberitahuan verifikasi email
     Route::get('/email/verify', function () {
         return view('auth.verify-email');
     })->name('verification.notice');
 
-    // Proses verifikasi saat user klik link di email
+    // 2. Proses verifikasi saat user klik link di email
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
-        return redirect('/home'); // Sesuaikan mau redirect ke mana setelah sukses
+
+        // JANGAN KE /home. Arahin ke login aja biar user login ulang dengan status verified.
+        return redirect('/login')->with('success', 'Email berhasil diverifikasi! Silakan login kembali.');
     })->middleware(['signed'])->name('verification.verify');
 
-    // Kirim ulang email verifikasi
+    // 3. Kirim ulang email verifikasi
     Route::post('/email/verification-notification', function (Request $request) {
         $request->user()->sendEmailVerificationNotification();
         return back()->with('message', 'Link verifikasi baru udah dikirim!');

@@ -23,20 +23,13 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            $user = Auth::user();
-
-            // Cek apakah user sudah verifikasi email (opsional untuk pesan khusus)
-            if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail()) {
-                // User akan otomatis diarahkan ke /email/verify oleh middleware 'verified'
-                // Tapi kita pastikan redirect ke dashboard dulu biar middleware-nya bekerja
-                return $user->role === 'admin' 
-                    ? redirect()->intended('/admin/dashboard') 
-                    : redirect()->intended('/siswa/dashboard');
-            }
             
-            return $user->role === 'admin' 
-                ? redirect()->intended('/admin/dashboard') 
-                : redirect()->intended('/siswa/dashboard');
+            // Cukup pake intended() ke satu tujuan default. 
+            // Biarkan Middleware Laravel yang kerja nentuin dia boleh masuk apa harus ke hal. verifikasi.
+            $user = Auth::user();
+            $url = ($user->role === 'admin') ? '/admin/dashboard' : '/siswa/dashboard';
+            
+            return redirect()->intended($url);
         }
 
         return back()->withErrors(['username' => 'Username atau Password salah!']);
