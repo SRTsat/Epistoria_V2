@@ -104,6 +104,16 @@
             <a href="{{ route('genre.index') }}" class="nav-link">
                 <i class="bi bi-tags"></i> Kelola Genre
             </a>
+            <a class="nav-link {{ request()->routeIs('admin.buku_rusak') ? 'active' : '' }}" href="{{ route('admin.buku_rusak') }}">
+                <i class="bi bi-tools me-2"></i> Buku Rusak
+                @php
+                    // Ambil jumlah buku rusak buat notifikasi di sidebar
+                    $jumlahRusak = \App\Models\Peminjaman::where('status', 'rusak')->count();
+                @endphp
+                @if($jumlahRusak > 0)
+                    <span class="badge bg-danger ms-auto rounded-pill" style="font-size: 0.7rem;">{{ $jumlahRusak }}</span>
+                @endif
+            </a>
             <hr>
             <form action="{{ route('logout') }}" method="POST">
                 @csrf

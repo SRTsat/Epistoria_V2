@@ -17,30 +17,23 @@ class PeminjamanController extends Controller
     public function indexAdmin(Request $request) 
     {
         $tahun = $request->get('tahun', 'semua'); 
-
-        // Bikin base query
         $query = Peminjaman::with(['user', 'buku'])->latest();
 
-        // Kalau milih tahun spesifik (bukan 'semua'), baru kita filter
         if ($tahun !== 'semua') {
             $query->whereYear('created_at', $tahun);
         }
 
-        // Ambil datanya (HANYA SEKALI INI SAJA, jangan ditimpa lagi di bawah!)
         $transaksi = $query->get();
         
-        // List tahun buat dropdown (tetap ambil semua tahun yang pernah ada di DB)
         $list_tahun = Peminjaman::selectRaw('YEAR(created_at) as tahun')
                     ->distinct()
                     ->orderBy('tahun', 'desc')
                     ->get();
 
-        // 5. Hitung Denda (Pake variabel $transaksi yang udah ke-filter di atas)
         $sekarang = Carbon::now()->startOfDay();
         $totalDendaKeseluruhan = 0;
 
         foreach ($transaksi as $t) {
-            // Logika status 'dipinjam' atau 'proses_kembali' (Admin perlu liat denda berjalan)
             if (in_array($t->status, ['dipinjam', 'proses_kembali'])) {
                 $deadline = Carbon::parse($t->deadline)->startOfDay();
                 if ($sekarang->gt($deadline)) {
@@ -77,7 +70,7 @@ class PeminjamanController extends Controller
             'user_id' => Auth::id(),
             'buku_id' => $request->buku_id,
             'tanggal_pinjam' => Carbon::now(),
-            'deadline' => Carbon::now()->addDays(7)->startOfDay(), // Deadline bersih jam 00:00
+            'deadline' => Carbon::now()->addDays(7)->startOfDay(),
             'status' => 'dipinjam',
             'denda' => 0
         ]);
@@ -86,111 +79,7 @@ class PeminjamanController extends Controller
         return back()->with('success', 'Buku berhasil dipinjam!');
     }
 
-    // 3. Proses Pengembalian (Update Denda ke DB)
-    public function kembalikan($id) 
-    {
-        $pinjam = Peminjaman::findOrFail($id);
-        
-        if ($pinjam->status === 'dikembalikan') {
-            return back()->with('error', 'Buku ini sudah dikembalikan.');
-        }
-
-        $tgl_kembali = Carbon::now()->startOfDay();
-        $deadline = Carbon::parse($pinjam->deadline)->startOfDay();
-        $denda = 0;
-
-        // Logika hitung denda saat klik kembali
-        if ($tgl_kembali->gt($deadline)) {
-            $selisih_hari = $tgl_kembali->diffInDays($deadline, true);
-            $denda = $selisih_hari * 1000;
-        }
-
-        $pinjam->update([
-            'tanggal_kembali' => Carbon::now(),
-            'status' => 'dikembalikan',
-            'denda' => $denda 
-        ]);
-
-        if ($pinjam->buku) {
-            $pinjam->buku->increment('stok');
-        }
-    
-        if ($denda > 0) {
-        return back()->with('success', "Buku kembali. Terlambat, denda: Rp " . number_format($denda, 0, ',', '.'));
-        }
-
-        return back()->with('success', 'Buku sudah kembali tepat waktu!');
-    }
-
-    // 4. Konfirmasi Pembayaran Denda
-    public function bayarDenda($id) 
-    {
-        $pinjam = Peminjaman::findOrFail($id);
-        
-        // Proteksi: jangan sampai denda dihapus tapi buku belum balik
-        if ($pinjam->status == 'dipinjam') {
-            return back()->with('error', 'Buku harus dikembalikan terlebih dahulu!');
-        }
-
-        $pinjam->update(['denda' => 0]);
-        return back()->with('success', 'Denda berhasil dilunasi!');
-    }
-
-    // 5. Export PDF
-    public function exportPdf(Request $request) 
-    {
-        // 1. Samain logic filter tahunnya (bisa 'semua' atau angka tahun)
-        $tahun = $request->get('tahun', 'semua');
-
-        $query = Peminjaman::with(['user', 'buku'])->latest();
-
-        if ($tahun !== 'semua') {
-            $query->whereYear('created_at', $tahun);
-        }
-
-        $transaksi = $query->get();
-
-        // 2. HITUNG DENDA SECARA REAL-TIME
-        // Ini kuncinya bro, biar yang statusnya masih 'dipinjam' dendanya nggak 0 di PDF
-        $sekarang = \Carbon\Carbon::now()->startOfDay();
-        $totalDendaKeseluruhan = 0;
-
-        foreach ($transaksi as $t) {
-            if (in_array($t->status, ['dipinjam', 'proses_kembali'])) {
-                $deadline = \Carbon\Carbon::parse($t->deadline)->startOfDay();
-                if ($sekarang->gt($deadline)) {
-                    $selisih = $sekarang->diffInDays($deadline, true);
-                    $t->denda_saat_ini = $selisih * 1000;
-                } else {
-                    $t->denda_saat_ini = 0;
-                }
-            } else {
-                // Jika sudah kembali, pakai nilai denda yang tercatat di DB
-                $t->denda_saat_ini = max(0, $t->denda);
-            }
-            $totalDendaKeseluruhan += $t->denda_saat_ini;
-        }
-        
-        // 3. Masukin totalDendaKeseluruhan ke compact
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.transaksi.pdf', [
-            'transaksi' => $transaksi,
-            'totalDenda' => $totalDendaKeseluruhan, 
-            'tahun' => $tahun
-        ])->setPaper('a4', 'landscape');
-                    
-        return $pdf->download("Laporan-Perpus-$tahun.pdf");
-    }
-
-    public function approvePinjam($id) {
-        $pinjam = Peminjaman::findOrFail($id);
-        
-        if ($pinjam->buku->stok <= 0) return back()->with('error', 'Stok habis!');
-
-        $pinjam->update(['status' => 'dipinjam']);
-        $pinjam->buku->decrement('stok'); // Stok berkurang saat buku keluar
-        return back()->with('success', 'Buku resmi dipinjamkan!');
-    }
-
+    // 3. Konfirmasi Terima & Filter Stok (Update Sesuai Saran Guru)
     public function konfirmasiTerima(Request $request, $id) 
     {
         $request->validate([
@@ -201,22 +90,18 @@ class PeminjamanController extends Controller
         $pinjam = Peminjaman::findOrFail($id);
         $buku = $pinjam->buku;
 
-        // 2. Hitung Denda Telat Otomatis
         $sekarang = Carbon::now()->startOfDay();
         $deadline = Carbon::parse($pinjam->deadline)->startOfDay();
         $denda_telat = 0;
 
         if ($sekarang->gt($deadline)) {
-            // CRITICAL: Tambahin parameter true biar hasilnya selalu POSITIF
             $selisih_hari = $sekarang->diffInDays($deadline, true);
             $denda_telat = $selisih_hari * 1000; 
         }
 
-        // 3. Gabungkan dengan Denda Tambahan (Manual)
         $denda_fisik = $request->denda_tambahan ?? 0;
         $total_denda = $denda_telat + $denda_fisik;
 
-        // 4. Update Status & Denda
         $status_final = ($request->kondisi === 'normal') ? 'dikembalikan' : $request->kondisi;
 
         $pinjam->update([
@@ -225,21 +110,79 @@ class PeminjamanController extends Controller
             'denda' => $total_denda 
         ]);
 
-        // 5. Update Stok
-        if ($request->kondisi !== 'hilang') {
+        // LOGIC CRITICAL: Hanya buku NORMAL yang stoknya nambah otomatis
+        if ($request->kondisi === 'normal') {
             $buku->increment('stok');
         }
 
-        return back()->with('success', "Buku diproses! Telat: Rp".number_format($denda_telat)." + Fisik: Rp".number_format($denda_fisik)." = Total: Rp".number_format($total_denda));
+        return back()->with('success', "Buku diproses! Kondisi: " . ucfirst($request->kondisi));
     }
-    
-    // 6. Export Excel
+
+    // 4. Halaman Khusus Buku Rusak (Daftar Tunggu Perbaikan)
+    public function bukuRusak()
+    {
+        // Ambil data yang statusnya 'rusak' saja
+        $rusaks = Peminjaman::with(['user', 'buku'])->where('status', 'rusak')->latest()->get();
+        return view('admin.buku_rusak', compact('rusaks'));
+    }
+
+    // 5. Tombol Perbaiki (Balikin ke Stok)
+    public function perbaikiBuku($id)
+    {
+        $pinjam = Peminjaman::findOrFail($id);
+        
+        // Tambah stok karena sudah diperbaiki
+        $pinjam->buku->increment('stok');
+
+        // Ubah status jadi dikembalikan agar hilang dari daftar "Buku Rusak"
+        $pinjam->update(['status' => 'dikembalikan']);
+
+        return back()->with('success', 'Buku sudah diperbaiki dan masuk ke stok kembali!');
+    }
+
+    // 6. Sisanya (PDF, Excel, Bayar Denda, Approve) - Tetap Sama
+    public function bayarDenda($id) 
+    {
+        $pinjam = Peminjaman::findOrFail($id);
+        if ($pinjam->status == 'dipinjam') {
+            return back()->with('error', 'Buku harus dikembalikan terlebih dahulu!');
+        }
+        $pinjam->update(['denda' => 0]);
+        return back()->with('success', 'Denda berhasil dilunasi!');
+    }
+
+    public function exportPdf(Request $request) 
+    {
+        $tahun = $request->get('tahun', 'semua');
+        $query = Peminjaman::with(['user', 'buku'])->latest();
+        if ($tahun !== 'semua') { $query->whereYear('created_at', $tahun); }
+        $transaksi = $query->get();
+
+        $sekarang = Carbon::now()->startOfDay();
+        foreach ($transaksi as $t) {
+            if (in_array($t->status, ['dipinjam', 'proses_kembali'])) {
+                $deadline = Carbon::parse($t->deadline)->startOfDay();
+                $t->denda_saat_ini = $sekarang->gt($deadline) ? $sekarang->diffInDays($deadline, true) * 1000 : 0;
+            } else {
+                $t->denda_saat_ini = max(0, $t->denda);
+            }
+        }
+        
+        $pdf = Pdf::loadView('admin.transaksi.pdf', ['transaksi' => $transaksi, 'tahun' => $tahun])->setPaper('a4', 'landscape');
+        return $pdf->download("Laporan-Perpus-$tahun.pdf");
+    }
+
+    public function approvePinjam($id) {
+        $pinjam = Peminjaman::findOrFail($id);
+        if ($pinjam->buku->stok <= 0) return back()->with('error', 'Stok habis!');
+        $pinjam->update(['status' => 'dipinjam']);
+        $pinjam->buku->decrement('stok');
+        return back()->with('success', 'Buku resmi dipinjamkan!');
+    }
+
     public function exportExcel(Request $request) 
     {
-        // Ambil tahun dari request, default tahun sekarang
         $tahun = $request->get('tahun', date('Y'));
-        
-        // Kirim variabel tahun ke class Export lu
         return Excel::download(new TransaksiExport($tahun), "Laporan-Perpus-$tahun.xlsx");
     }
 }

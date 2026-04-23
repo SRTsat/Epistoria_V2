@@ -32,7 +32,7 @@
                 <td>{{ $b->judul }}</td>
                 <td>{{ $b->penulis }}</td>
                 <td>{{ $b->penerbit }}</td>
-                <td>{{ $b->genre }}</td>
+                <td>{{ $b->genre->nama ?? 'Umum' }}</td>
                 <td>{{ $b->stok }}</td>
             </tr>
             @endforeach

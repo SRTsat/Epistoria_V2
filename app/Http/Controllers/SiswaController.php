@@ -108,15 +108,36 @@ class SiswaController extends Controller
             'kelas' => 'required|string'
         ]);
 
-        // Kita bikin datanya masuk ke DB tapi statusnya 'menunggu'
-        // Stok tidak dikurangi di sini!
+        $userId = Auth::id();
+
+        // --- VALIDASI 1: CEK APAKAH LAGI PINJAM BUKU ---
+        // Status 'menunggu', 'dipinjam', atau 'proses_kembali' dianggap masih megang/pesen buku
+        $sedangPinjam = Peminjaman::where('user_id', $userId)
+            ->whereIn('status', ['menunggu', 'dipinjam', 'proses_kembali'])
+            ->exists();
+
+        if ($sedangPinjam) {
+            return redirect()->back()->with('error', 'balikin buku dahulu.');
+        }
+
+        // --- VALIDASI 2: CEK APAKAH ADA DENDA YANG BELUM LUNAS ---
+        // Cek di riwayat apakah ada kolom 'denda' yang angkanya di atas 0
+        $adaDenda = Peminjaman::where('user_id', $userId)
+            ->where('denda', '>', 0)
+            ->exists();
+
+        if ($adaDenda) {
+            return redirect()->back()->with('error', 'lunasi denda terlebih dahulu!');
+        }
+
+        // Kalau lolos dua validasi di atas, baru deh buat datanya
         Peminjaman::create([
-            'user_id' => Auth::id(),
+            'user_id' => $userId,
             'buku_id' => $request->buku_id,
             'kelas' => $request->kelas,
             'tanggal_pinjam' => now(), 
             'deadline' => now()->addDays((int) $request->durasi),
-            'status' => 'menunggu', // Kunci utamanya di sini
+            'status' => 'menunggu',
             'denda' => 0
         ]);
 

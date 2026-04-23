@@ -60,9 +60,18 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     
+    Route::get('/buku/export-pdf', [BukuController::class, 'exportPdf'])->name('buku.exportPdf');
+    Route::get('/transaksi/export-excel', [PeminjamanController::class, 'exportExcel'])->name('transaksi.exportExcel');
+    Route::get('/transaksi/export-pdf', [PeminjamanController::class, 'exportPdf'])->name('transaksi.exportPdf');
+
     // Kelola Genre & Buku
     Route::resource('genre', GenreController::class);
     Route::resource('buku', BukuController::class);
+    // Halaman daftar buku rusak
+    Route::get('/admin/buku-rusak', [PeminjamanController::class, 'bukuRusak'])->name('admin.buku_rusak');
+    
+    // Proses perbaikan buku (Balikin ke stok)
+    Route::post('/admin/buku-perbaiki/{id}', [PeminjamanController::class, 'perbaikiBuku'])->name('admin.perbaiki');
     
     // Kelola Anggota
     Route::get('/anggota', [AdminController::class, 'indexAnggota'])->name('admin.anggota');
@@ -76,11 +85,6 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::patch('/transaksi/{id}/approve', [PeminjamanController::class, 'approvePinjam'])->name('admin.transaksi.approve');
     Route::patch('/transaksi/{id}/konfirmasi', [PeminjamanController::class, 'konfirmasiTerima'])->name('admin.transaksi.konfirmasi');
     Route::patch('/transaksi/{id}/bayar', [PeminjamanController::class, 'bayarDenda'])->name('admin.transaksi.bayar');
-
-    // Export Data
-    Route::get('/buku/export-pdf', [BukuController::class, 'exportPdf'])->name('buku.exportPdf');
-    Route::get('/transaksi/export-excel', [PeminjamanController::class, 'exportExcel'])->name('transaksi.exportExcel');
-    Route::get('/transaksi/export-pdf', [PeminjamanController::class, 'exportPdf'])->name('transaksi.exportPdf');
 });
 
 /*

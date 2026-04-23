@@ -32,10 +32,18 @@ class AdminController extends Controller
         }
 
         $recent_activities = Peminjaman::with(['user', 'buku'])->latest('updated_at')->take(5)->get();
-        $populers = Buku::withCount('peminjamans')->orderBy('peminjamans_count', 'desc')->take(3)->get();
+        
+        // Ambil buku populer (Gue ambil 5 biar chart-nya kelihatan bagus, kalau 3 kedikitan)
+        $populers = Buku::withCount('peminjamans')->orderBy('peminjamans_count', 'desc')->take(5)->get();
+
+        // --- TAMBAHAN UNTUK CHART ---
+        $chartLabels = $populers->pluck('judul'); // Ambil semua judul buku
+        $chartData = $populers->pluck('peminjamans_count'); // Ambil jumlah berapa kali dipinjam
+        // ----------------------------
 
         return view('admin.dashboard', compact(
-            'total_buku', 'total_siswa', 'total_pinjam', 'total_denda', 'recent_activities', 'populers'
+            'total_buku', 'total_siswa', 'total_pinjam', 'total_denda', 'recent_activities', 
+            'populers', 'chartLabels', 'chartData'
         ));
     }
 
