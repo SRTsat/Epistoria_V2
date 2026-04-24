@@ -1,9 +1,10 @@
 @forelse($bukus as $b)
 <div class="col-md-3 mb-4">
-    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative card-hover">
+    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative card-hover" style="transition: all 0.3s ease;">
         
-        <span class="position-absolute top-0 end-0 m-2 badge {{ $b->stok > 0 ? 'bg-success' : 'bg-danger' }} rounded-pill shadow-sm">
-            {{ $b->stok > 0 ? $b->stok . ' Tersedia' : 'Habis' }}
+        {{-- BADGE STOK VIRTUAL --}}
+        <span class="position-absolute top-0 end-0 m-2 badge {{ $b->stok_tersedia > 0 ? 'bg-success' : 'bg-danger' }} rounded-pill shadow-sm" style="z-index: 10;">
+            {{ $b->stok_tersedia > 0 ? $b->stok_tersedia . ' Tersedia' : 'Habis (Dipesan)' }}
         </span>
 
         <div class="p-3 bg-light text-center">
@@ -19,32 +20,33 @@
             @endif
         </div>
 
-        <div class="card-body">
-            {{-- RELASI GENRE --}}
-            <div class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 10px;">
+        <div class="card-body d-flex flex-column">
+            <div class="badge bg-primary bg-opacity-10 text-primary mb-2 align-self-start" style="font-size: 10px;">
                 {{ $b->genre->nama ?? 'Umum' }}
             </div>
 
-            <h6 class="fw-bold mb-1 text-truncate">{{ $b->judul }}</h6>
+            <h6 class="fw-bold mb-1 text-truncate" title="{{ $b->judul }}">{{ $b->judul }}</h6>
             <p class="text-muted mb-3 small">{{ $b->penulis }}</p>
             
-            @if($b->stok > 0)
-                <button class="btn btn-primary btn-sm w-100 rounded-pill fw-bold"
-                        data-bs-toggle="modal"
-                        data-bs-target="#modalPinjam{{ $b->id }}">
-                    Pinjam
-                </button>
-            @else
-                <button class="btn btn-light btn-sm w-100 rounded-pill disabled text-muted">
-                    Stok Kosong
-                </button>
-            @endif
+            <div class="mt-auto">
+                @if($b->stok_tersedia > 0)
+                    <button class="btn btn-primary btn-sm w-100 rounded-pill fw-bold"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalPinjam{{ $b->id }}">
+                        Pinjam
+                    </button>
+                @else
+                    <button class="btn btn-light btn-sm w-100 rounded-pill disabled text-muted border">
+                        Stok Habis
+                    </button>
+                @endif
+            </div>
         </div>
     </div>
 </div>
 
-{{-- ✅ MODAL (BALIK LAGI) --}}
-@if($b->stok > 0)
+{{-- ✅ MODAL KONFIRMASI (Hanya render jika stok tersedia) --}}
+@if($b->stok_tersedia > 0)
 <div class="modal fade" id="modalPinjam{{ $b->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow-lg">
@@ -71,6 +73,7 @@
                         <div>
                             <h6 class="fw-bold mb-1 text-dark">{{ $b->judul }}</h6>
                             <p class="text-muted small mb-0">{{ $b->penulis }}</p>
+                            <small class="text-primary fw-bold" style="font-size: 11px;">Sisa Antrean: {{ $b->stok_tersedia }}</small>
                         </div>
                     </div>
 
@@ -95,10 +98,12 @@
                         </div>
                     </div>
 
-                    <small class="text-info" style="font-size: 11px;">
-                        <i class="bi bi-calendar-event me-1"></i>
-                        Deadline akan dihitung otomatis sejak hari ini.
-                    </small>
+                    <div class="p-2 rounded-3 bg-info bg-opacity-10">
+                        <small class="text-info d-block" style="font-size: 11px;">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            Buku harus dikembalikan sebelum jam 15.00 pada hari deadline.
+                        </small>
+                    </div>
                 </div>
 
                 <div class="modal-footer border-0 pt-0 px-4 pb-4">
@@ -110,7 +115,7 @@
 
                     <button type="submit" 
                             class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
-                        Pinjam
+                        Ajukan Pinjaman
                     </button>
                 </div>
             </form>
@@ -122,7 +127,8 @@
 
 @empty
 <div class="col-12 text-center py-5">
-    <p class="text-muted">Buku nggak ketemu, bro.</p>
+    <i class="bi bi-search fs-1 text-muted opacity-25 d-block mb-3"></i>
+    <p class="text-muted fw-medium">Buku nggak ketemu, coba cari judul lain bro.</p>
 </div>
 @endforelse
 
@@ -135,6 +141,15 @@
     .form-control:focus {
         background-color: #ffffff !important;
         box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1) !important;
+    }
+    /* Biar gambar di card tetep rapi */
+    .card-body h6 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: normal;
+        height: 2.4em; /* Stabilkan tinggi biar card rata */
     }
 </style>
 @endpush

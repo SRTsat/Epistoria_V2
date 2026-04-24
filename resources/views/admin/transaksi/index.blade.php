@@ -15,11 +15,6 @@
                 </div>
 
                 <div class="d-flex gap-2">
-                    <a href="{{ route('transaksi.exportExcel', ['tahun' => $tahun]) }}" 
-                       class="btn btn-outline-success shadow-sm px-4 rounded-pill fw-bold">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Excel {{ $tahun }}
-                    </a>
-                    
                     <a href="{{ route('transaksi.exportPdf', ['tahun' => $tahun]) }}" 
                        class="btn btn-outline-danger shadow-sm px-4 rounded-pill fw-bold">
                         <i class="bi bi-file-earmark-pdf me-1"></i> PDF {{ $tahun }}
@@ -63,7 +58,7 @@
                 <div class="card-body p-4 bg-primary text-white position-relative">
                     <i class="bi bi-journal-check position-absolute end-0 bottom-0 mb-3 me-3 opacity-25" style="font-size: 3rem;"></i>
                     <div class="small opacity-75 fw-bold text-uppercase">Total Transaksi ({{ $tahun }})</div>
-                    <h2 class="fw-bold mb-0 mt-1">{{ $transaksi->count() }}</h2>
+                    <h2 class="fw-bold mb-0 mt-1">{{ $transaksi->total() }}</h2>
                 </div>
             </div>
         </div>
@@ -119,14 +114,24 @@
                             </td>
                             <td class="text-center">
                                 @php
-                                    $nilaiDenda = in_array($t->status, ['dipinjam', 'proses_kembali']) ? ($t->denda_saat_ini ?? 0) : $t->denda;
+                                    // 1. Ambil nilai denda (saat ini atau yang sudah fix)
+                                    $nilaiDenda = in_array($t->status, ['dipinjam', 'proses_kembali']) 
+                                                ? ($t->denda_saat_ini ?? 0) 
+                                                : $t->denda;
                                 @endphp
 
                                 @if($nilaiDenda > 0)
+                                    {{-- Jika ada denda (baik berjalan maupun sudah fix), tampilkan angka --}}
                                     <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm">
                                         Rp {{ number_format($nilaiDenda, 0, ',', '.') }}
                                     </span>
+                                @elseif(in_array($t->status, ['dipinjam', 'proses_kembali', 'menunggu']))
+                                    {{-- Jika denda 0 tapi buku MASIH di siswa/proses, jangan bilang lunas --}}
+                                    <span class="text-muted small fw-bold">
+                                        <i class="bi bi-dash-circle me-1"></i> -
+                                    </span>
                                 @else
+                                    {{-- Jika denda 0 dan status sudah Selesai/Kembali, baru bilang lunas --}}
                                     <span class="text-success small fw-bold">
                                         <i class="bi bi-patch-check-fill me-1"></i> Lunas
                                     </span>
@@ -148,28 +153,38 @@
                                 @endif
                             </td>
                             <td class="text-center px-4">
+                                {{-- LOGIC AKSI YANG DIPERBAIKI --}}
                                 @if($t->status == 'menunggu')
                                     <form action="{{ route('admin.transaksi.approve', $t->id) }}" method="POST" class="d-inline">
                                         @csrf @method('PATCH')
                                         <button class="btn btn-sm btn-warning text-white rounded-pill px-3 shadow-sm">Setujui</button>
                                     </form>
-                                @elseif($t->status == 'proses_kembali' || $t->status == 'dipinjam')
-                                    {{-- TOMBOL PEMICU MODAL --}}
+
+                                @elseif($t->status == 'dipinjam')
+                                    {{-- Buku masih di siswa, admin tidak bisa melakukan apa-apa sampai siswa lapor balik --}}
+                                    <span class="text-muted small">
+                                        <i class="bi bi-hourglass-split"></i> Di Siswa
+                                    </span>
+
+                                @elseif($t->status == 'proses_kembali')
+                                    {{-- Tombol TERIMA hanya muncul jika status sudah proses_kembali --}}
                                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalTerima{{ $t->id }}">
                                         Terima Buku
                                     </button>
-                                @elseif(in_array($t->status, ['dikembalikan', 'rusak', 'hilang']) && $t->denda > 0)
+
+                                @elseif(in_array($t->status, ['selesai', 'dikembalikan', 'rusak', 'hilang']) && $t->denda > 0)
                                     <form action="{{ route('admin.transaksi.bayar', $t->id) }}" method="POST" class="d-inline">
                                         @csrf @method('PATCH')
                                         <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">Bayar Denda</button>
                                     </form>
+
                                 @else
                                     <i class="bi bi-check2-all text-success fs-5"></i>
                                 @endif
                             </td>
                         </tr>
 
-                        {{-- MODAL KONFIRMASI TERIMA (Letakkan di dalam loop agar ID-nya unik) --}}
+                        {{-- MODAL KONFIRMASI TERIMA --}}
                         <div class="modal fade" id="modalTerima{{ $t->id }}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
                                 <form action="{{ route('admin.transaksi.konfirmasi', $t->id) }}" method="POST">
@@ -208,8 +223,6 @@
                                 </form>
                             </div>
                         </div>
-                        {{-- END MODAL --}}
-
                         @empty
                         <tr>
                             <td colspan="7" class="text-center py-5">
@@ -221,6 +234,16 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="d-flex justify-content-between align-items-center p-4 border-top">
+                <div class="small text-muted">
+                    Menampilkan {{ $transaksi->firstItem() ?? 0 }} sampai {{ $transaksi->lastItem() ?? 0 }} dari {{ $transaksi->total() }} data
+                </div>
+                <div>
+                    {{ $transaksi->links('pagination::bootstrap-5') }}
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

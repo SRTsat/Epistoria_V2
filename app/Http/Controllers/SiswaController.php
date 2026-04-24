@@ -11,7 +11,7 @@ use Carbon\Carbon;
 class SiswaController extends Controller
 {
     // Dashboard Siswa
-     public function index() 
+    public function index() 
     {
         $userId = Auth::id();
         $pinjamans = Peminjaman::where('user_id', $userId)->get();
@@ -20,7 +20,6 @@ class SiswaController extends Controller
         $sekarang = now()->startOfDay();
 
         foreach ($pinjamans as $p) {
-            // Tambahin 'proses_kembali' di sini bro
             if (in_array($p->status, ['dipinjam', 'proses_kembali'])) {
                 $deadline = \Carbon\Carbon::parse($p->deadline)->startOfDay();
                 if ($sekarang->gt($deadline)) {
@@ -28,14 +27,23 @@ class SiswaController extends Controller
                     $totalDenda += ($selisih * 1000); 
                 }
             } else {
-                // Ini untuk status 'dikembalikan', 'rusak', atau 'hilang' yang dendanya sudah fix di DB
                 $totalDenda += max(0, $p->denda); 
             }
         }
 
+        // Hitung buku terbaru + stok virtual
+        $bukuTerbaru = Buku::with('genre')->withCount(['peminjamans' => function($q) {
+            $q->whereIn('status', ['menunggu', 'dipinjam', 'proses_kembali']);
+        }])->latest()->take(4)->get();
+
+        foreach ($bukuTerbaru as $b) {
+            $b->stok_tersedia = max(0, $b->stok - $b->peminjamans_count);
+        }
+
         $totalDipinjam = $pinjamans->whereIn('status', ['dipinjam', 'proses_kembali'])->count();
         $totalRiwayat = $pinjamans->count();
-        $bukuTerbaru = Buku::latest()->take(4)->get();
+
+        // JANGAN timpa $bukuTerbaru lagi di sini!
 
         return view('siswa.dashboard', compact('totalDipinjam', 'totalRiwayat', 'totalDenda', 'bukuTerbaru'));
     }
@@ -45,9 +53,12 @@ class SiswaController extends Controller
     {
         $search = $request->search;
         $selectedGenres = $request->genres; 
-        $query = Buku::query()->with('genre');
+        
+        // Gunakan withCount untuk menghitung transaksi aktif
+        $query = Buku::query()->with('genre')->withCount(['peminjamans' => function($q) {
+            $q->whereIn('status', ['menunggu', 'dipinjam', 'proses_kembali']);
+        }]);
 
-        // Multi-filter Genre - Ganti ke 'genre_id'
         if ($request->filled('genres')) {
             $query->whereIn('genre_id', $selectedGenres);
         }
@@ -60,13 +71,19 @@ class SiswaController extends Controller
         }
 
         $bukus = $query->get();
-        $genres = \App\Models\Genre::all(); // Tambahkan ini buat ditampilin di checkbox filter
+
+        // Tambahkan logic "stok_tersedia" secara dinamis
+        foreach ($bukus as $b) {
+            // Stok Tersedia = Stok di DB - Jumlah Antrean/Pinjam
+            $b->stok_tersedia = max(0, $b->stok - $b->peminjamans_count);
+        }
+
+        $genres = \App\Models\Genre::all();
 
         if ($request->ajax()) {
             return view('siswa._buku_list', compact('bukus'))->render();
         }
 
-        // Kirim $genres ke view
         return view('siswa.katalog', compact('bukus', 'genres'));
     }
 
@@ -109,28 +126,34 @@ class SiswaController extends Controller
         ]);
 
         $userId = Auth::id();
+        $buku = Buku::withCount(['peminjamans' => function($q) {
+            $q->whereIn('status', ['menunggu', 'dipinjam', 'proses_kembali']);
+        }])->findOrFail($request->buku_id);
+
+        // --- VALIDASI STOK VIRTUAL ---
+        $stokTersedia = $buku->stok - $buku->peminjamans_count;
+        if ($stokTersedia <= 0) {
+            return redirect()->back()->with('error', 'Waduh, buku ini baru saja dipesan orang lain. Stok habis!');
+        }
 
         // --- VALIDASI 1: CEK APAKAH LAGI PINJAM BUKU ---
-        // Status 'menunggu', 'dipinjam', atau 'proses_kembali' dianggap masih megang/pesen buku
         $sedangPinjam = Peminjaman::where('user_id', $userId)
             ->whereIn('status', ['menunggu', 'dipinjam', 'proses_kembali'])
             ->exists();
 
         if ($sedangPinjam) {
-            return redirect()->back()->with('error', 'balikin buku dahulu.');
+            return redirect()->back()->with('error', 'Selesaikan peminjaman yang ada dahulu.');
         }
 
-        // --- VALIDASI 2: CEK APAKAH ADA DENDA YANG BELUM LUNAS ---
-        // Cek di riwayat apakah ada kolom 'denda' yang angkanya di atas 0
+        // --- VALIDASI 2: CEK APAKAH ADA DENDA ---
         $adaDenda = Peminjaman::where('user_id', $userId)
             ->where('denda', '>', 0)
             ->exists();
 
         if ($adaDenda) {
-            return redirect()->back()->with('error', 'lunasi denda terlebih dahulu!');
+            return redirect()->back()->with('error', 'Lunasi denda terlebih dahulu!');
         }
 
-        // Kalau lolos dua validasi di atas, baru deh buat datanya
         Peminjaman::create([
             'user_id' => $userId,
             'buku_id' => $request->buku_id,

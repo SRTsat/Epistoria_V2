@@ -6,139 +6,213 @@
     <title>Admin Dashboard - Perpustakaan</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
     @stack('styles')
 
     <style>
-        /* Google Fonts buat kesan modern */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-        body { 
-            background-color: #f0f2f5; 
-            font-family: 'Inter', sans-serif;
-            color: #334155;
+        :root {
+            --sidebar-bg: #0f172a;
+            --primary-blue: #3b82f6;
+            --accent-color: #6366f1;
         }
 
-        /* Sidebar dengan Gradasi & Blur */
+        body { 
+            background-color: #f8fafc; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Modern */
         .sidebar { 
             height: 100vh; 
-            width: 260px; 
+            width: 280px; 
             position: fixed; 
-            background: #1e293b; 
+            background: var(--sidebar-bg); 
             color: white; 
-            padding-top: 25px; 
+            padding: 20px 0;
             z-index: 1000;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .brand-section {
+            padding: 0 25px 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-color));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* User Profile Mini */
+        .user-profile-mini {
+            margin: 0 20px 25px;
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         .main-content { 
-            margin-left: 260px; 
-            padding: 40px; 
+            margin-left: 280px; 
+            padding: 30px 45px; 
             transition: all 0.3s ease;
+            min-height: 100vh;
         }
 
-        /* Nav Link yang Lebih Interaktif */
+        /* Nav Link Enhancement */
         .nav-link { 
             color: #94a3b8; 
-            padding: 12px 18px;
-            border-radius: 8px;
-            margin: 4px 15px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin: 4px 18px;
             font-weight: 500;
             display: flex;
             align-items: center;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        .nav-link i { font-size: 1.1rem; }
+        .nav-link i { 
+            font-size: 1.2rem; 
+            margin-right: 12px;
+            transition: all 0.3s ease;
+        }
 
         .nav-link:hover { 
-            color: #f8fafc; 
+            color: #fff; 
             background: rgba(255, 255, 255, 0.05);
-            transform: translateX(5px);
         }
 
         .nav-link.active {
-            background: linear-gradient(45deg, #2563eb, #3b82f6);
-            color: white !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-blue) !important;
         }
 
-        /* Card Styling untuk konten */
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        /* Indicator Active */
+        .nav-link.active::before {
+            content: "";
+            position: absolute;
+            left: -18px;
+            height: 20px;
+            width: 4px;
+            background: var(--primary-blue);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 2px 0 10px rgba(59, 130, 246, 0.5);
         }
 
+        .nav-link.active i {
+            color: var(--primary-blue);
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #475569;
+            margin: 20px 35px 10px;
+            font-weight: 700;
+        }
+
+        /* Alert Styling */
         .alert {
-            border-radius: 12px;
+            border: none;
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
         }
 
-        /* Custom Scrollbar biar estetik */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h4 class="text-center fw-bold">Admin Perpus</h4>
-        <p class="text-center text-muted small">Panel Kendali</p>
-        <hr>
-        <nav class="nav flex-column px-3">
+        <div class="brand-section">
+            <div class="brand-logo"><i class="bi bi-book-half"></i></div>
+            <span class="fw-bold h5 mb-0 text-white">Epistoria</span>
+        </div>
+
+        <div class="user-profile-mini">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold" style="width: 40px; height: 40px; font-size: 0.9rem;">
+                        {{ substr(Auth::user()->name, 0, 1) }}
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3 overflow-hidden">
+                    <p class="text-white small fw-bold mb-0 text-truncate">{{ Auth::user()->name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">Main Menu</div>
+        <nav class="nav flex-column">
             <a class="nav-link {{ request()->is('admin/dashboard') ? 'active' : '' }}" href="{{ url('/admin/dashboard') }}">
-                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                <i class="bi bi-grid-1x2-fill"></i> Dashboard
             </a>
             <a class="nav-link {{ request()->is('admin/buku*') ? 'active' : '' }}" href="{{ route('buku.index') }}">
-                <i class="bi bi-book me-2"></i> Kelola Buku
+                <i class="bi bi-journal-text"></i> Kelola Buku
+            </a>
+            <a class="nav-link {{ request()->is('admin/genre*') ? 'active' : '' }}" href="{{ route('genre.index') }}">
+                <i class="bi bi-tags-fill"></i> Genre Buku
             </a>
             <a class="nav-link {{ request()->is('admin/anggota*') ? 'active' : '' }}" href="{{ url('/admin/anggota') }}">
-                <i class="bi bi-people me-2"></i> Kelola Anggota
+                <i class="bi bi-people-fill"></i> Anggota
             </a>
+            
+            <div class="section-title">Transaksi</div>
             <a class="nav-link {{ request()->is('admin/transaksi*') ? 'active' : '' }}" href="{{ url('/admin/transaksi') }}">
-                <i class="bi bi-cart-check me-2"></i> Data Transaksi
-            </a>
-            <a href="{{ route('genre.index') }}" class="nav-link">
-                <i class="bi bi-tags"></i> Kelola Genre
+                <i class="bi bi-arrow-left-right"></i> Log Transaksi
             </a>
             <a class="nav-link {{ request()->routeIs('admin.buku_rusak') ? 'active' : '' }}" href="{{ route('admin.buku_rusak') }}">
-                <i class="bi bi-tools me-2"></i> Buku Rusak
+                <i class="bi bi-exclamation-octagon-fill"></i> Buku Rusak
                 @php
-                    // Ambil jumlah buku rusak buat notifikasi di sidebar
                     $jumlahRusak = \App\Models\Peminjaman::where('status', 'rusak')->count();
                 @endphp
                 @if($jumlahRusak > 0)
-                    <span class="badge bg-danger ms-auto rounded-pill" style="font-size: 0.7rem;">{{ $jumlahRusak }}</span>
+                    <span class="badge bg-danger ms-auto rounded-pill">{{ $jumlahRusak }}</span>
                 @endif
             </a>
-            <hr>
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button class="btn btn-outline-danger btn-sm w-100 mt-2">
-                    <i class="bi bi-box-arrow-right me-1"></i> Logout
-                </button>
-            </form>
+
+            <div class="mt-auto pt-4 px-4">
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button class="btn btn-link text-danger text-decoration-none small d-flex align-items-center p-0">
+                        <i class="bi bi-box-arrow-left me-2"></i> Keluar Aplikasi
+                    </button>
+                </form>
+            </div>
         </nav>
     </div>
 
     <div class="main-content">
+        {{-- Flash Messages --}}
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm">
-                <i class="bi bi-check-circle me-2"></i> {{ session('success') }}
+            <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4">
+                <div class="d-flex">
+                    <i class="bi bi-check-circle-fill me-3 fs-4"></i>
+                    <div>
+                        <h6 class="alert-heading fw-bold mb-1">Berhasil!</h6>
+                        <p class="mb-0 small">{{ session('success') }}</p>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="alert alert-danger border-0 shadow-sm">
-                <ul class="mb-0">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
             </div>
         @endif
 

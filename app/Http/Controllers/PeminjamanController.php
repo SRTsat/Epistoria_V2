@@ -23,17 +23,13 @@ class PeminjamanController extends Controller
             $query->whereYear('created_at', $tahun);
         }
 
-        $transaksi = $query->get();
-        
-        $list_tahun = Peminjaman::selectRaw('YEAR(created_at) as tahun')
-                    ->distinct()
-                    ->orderBy('tahun', 'desc')
-                    ->get();
-
+        // --- 1. HITUNG TOTAL DENDA DARI SEMUA DATA (SEBELUM PAGINATE) ---
+        // Kita ambil semua data yang sesuai filter tahun buat itung denda asli
+        $semuaTransaksiUntukDenda = $query->get(); 
         $sekarang = Carbon::now()->startOfDay();
         $totalDendaKeseluruhan = 0;
 
-        foreach ($transaksi as $t) {
+        foreach ($semuaTransaksiUntukDenda as $t) {
             if (in_array($t->status, ['dipinjam', 'proses_kembali'])) {
                 $deadline = Carbon::parse($t->deadline)->startOfDay();
                 if ($sekarang->gt($deadline)) {
@@ -47,10 +43,28 @@ class PeminjamanController extends Controller
             }
             $totalDendaKeseluruhan += $t->denda_saat_ini;
         }
+
+        // --- 2. BARU KITA PAGINATE BUAT TAMPILAN TABEL ---
+        $transaksi = $query->paginate(10)->appends($request->all());
         
+        // Loop sekali lagi buat data yang di-paginate biar label denda di tabel muncul
+        foreach ($transaksi as $t) {
+            if (in_array($t->status, ['dipinjam', 'proses_kembali'])) {
+                $deadline = Carbon::parse($t->deadline)->startOfDay();
+                $t->denda_saat_ini = $sekarang->gt($deadline) ? $sekarang->diffInDays($deadline, true) * 1000 : 0;
+            } else {
+                $t->denda_saat_ini = max(0, $t->denda);
+            }
+        }
+
+        $list_tahun = Peminjaman::selectRaw('YEAR(created_at) as tahun')
+                    ->distinct()
+                    ->orderBy('tahun', 'desc')
+                    ->get();
+
         return view('admin.transaksi.index', [
             'transaksi' => $transaksi,
-            'totalDenda' => $totalDendaKeseluruhan, 
+            'totalDenda' => $totalDendaKeseluruhan, // Angka ini sekarang dari SEMUA data
             'tahun' => $tahun,
             'list_tahun' => $list_tahun
         ]);
@@ -155,10 +169,17 @@ class PeminjamanController extends Controller
     {
         $tahun = $request->get('tahun', 'semua');
         $query = Peminjaman::with(['user', 'buku'])->latest();
-        if ($tahun !== 'semua') { $query->whereYear('created_at', $tahun); }
+        
+        if ($tahun !== 'semua') { 
+            $query->whereYear('created_at', $tahun); 
+        }
+        
         $transaksi = $query->get();
-
         $sekarang = Carbon::now()->startOfDay();
+
+        // 1. Inisialisasi variabel total
+        $totalDenda = 0; 
+
         foreach ($transaksi as $t) {
             if (in_array($t->status, ['dipinjam', 'proses_kembali'])) {
                 $deadline = Carbon::parse($t->deadline)->startOfDay();
@@ -166,9 +187,18 @@ class PeminjamanController extends Controller
             } else {
                 $t->denda_saat_ini = max(0, $t->denda);
             }
+            
+            // 2. Tambahkan ke total setiap kali loop jalan
+            $totalDenda += $t->denda_saat_ini;
         }
         
-        $pdf = Pdf::loadView('admin.transaksi.pdf', ['transaksi' => $transaksi, 'tahun' => $tahun])->setPaper('a4', 'landscape');
+        // 3. Masukkan 'totalDenda' ke dalam array data view
+        $pdf = Pdf::loadView('admin.transaksi.pdf', [
+            'transaksi' => $transaksi, 
+            'tahun' => $tahun,
+            'totalDenda' => $totalDenda // <-- WAJIB ADA INI
+        ])->setPaper('a4', 'landscape');
+
         return $pdf->download("Laporan-Perpus-$tahun.pdf");
     }
 

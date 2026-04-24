@@ -74,28 +74,49 @@
         </a>
     </div>
 
-    <div class="row g-4">
-        @foreach($bukuTerbaru as $b)
-        <div class="col-6 col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 hover-elevate">
-                <div class="p-2">
-                    @if($b->foto)
-                        <img src="{{ asset('storage/buku/'.$b->foto) }}" class="card-img-top rounded-4 shadow-sm" style="height: 220px; object-fit: cover;">
+   <div class="row g-4">
+    @foreach($bukuTerbaru as $b)
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 hover-elevate position-relative overflow-hidden">
+            
+            {{-- Badge Stok --}}
+            <span class="position-absolute top-0 end-0 m-2 badge {{ $b->stok_tersedia > 0 ? 'bg-success' : 'bg-danger' }} rounded-pill" style="z-index: 5; font-size: 10px;">
+                {{ $b->stok_tersedia > 0 ? $b->stok_tersedia . ' Ready' : 'Full' }}
+            </span>
+
+            <div class="p-2">
+                @if($b->foto)
+                    <img src="{{ asset('storage/buku/'.$b->foto) }}" class="card-img-top rounded-4 shadow-sm" style="height: 220px; object-fit: cover;">
+                @else
+                    <div class="bg-light rounded-4 d-flex align-items-center justify-content-center" style="height: 220px;">
+                        <i class="bi bi-image text-muted fs-1"></i>
+                    </div>
+                @endif
+            </div>
+
+            <div class="card-body pt-2 d-flex flex-column">
+                <span class="badge bg-primary bg-opacity-10 text-primary mb-2 align-self-start" style="font-size: 10px;">
+                    {{ $b->genre->nama ?? 'Umum' }}
+                </span>
+                
+                <h6 class="fw-bold mb-1 text-truncate text-dark" title="{{ $b->judul }}">{{ $b->judul }}</h6>
+                <p class="text-muted mb-3" style="font-size: 12px;">{{ $b->penulis }}</p>
+                
+                <div class="mt-auto">
+                    @if($b->stok_tersedia > 0)
+                        <a href="{{ route('siswa.katalog', ['search' => $b->judul]) }}" class="btn btn-primary w-100 rounded-pill btn-sm shadow-sm fw-bold">
+                            Pinjam
+                        </a>
                     @else
-                        <div class="bg-light rounded-4 d-flex align-items-center justify-content-center" style="height: 220px;">
-                            <i class="bi bi-image text-muted fs-1"></i>
-                        </div>
+                        <button class="btn btn-light w-100 rounded-pill btn-sm disabled text-muted border">
+                            Habis
+                        </button>
                     @endif
-                </div>
-                <div class="card-body pt-2">
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 10px;">{{ $b->genre->nama ?? 'Umum' }}</span>
-                    <h6 class="fw-bold mb-1 text-truncate text-dark">{{ $b->judul }}</h6>
-                    <p class="text-muted mb-3" style="font-size: 12px;">{{ $b->penulis }}</p>
-                    <a href="{{ route('siswa.katalog') }}" class="btn btn-primary w-100 rounded-pill btn-sm shadow-sm">Pinjam</a>
                 </div>
             </div>
         </div>
-        @endforeach
     </div>
+    @endforeach
+</div>
 </div>
 @endsection
